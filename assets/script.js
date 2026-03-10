@@ -4,7 +4,7 @@
  */
 
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbymPfg403UeZQzPndndNDew9oQ2DFqzOmT4uWgm9xWNRjqk_dolafQm9DvvDVnMgFgz/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwzRTxtcuT4JX9G54ihS69Ve_kxlJSCFCue-zfcmFmDCRAEiyK_9foEAHw_EgCIFPXX/exec',
   APP_NAME: 'HR MAWARAN',
   SESSION_KEY: 'hr_mawaran_session',
   VERSION: '1.0.0'
