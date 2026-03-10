@@ -12,7 +12,8 @@ const AdminState = {
   attendance:    [],
   announcements: [],
   salary:        [],
-  editTarget:    null   // current row being edited
+  editTarget:    null,
+  currentDetailEmp: null  // employee being viewed in detail tab
 };
 
 /* ══════════════════════════════════════════════
@@ -23,9 +24,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const user = requireAuth(true);
   if (!user) return;
 
-  // Load initial tab (overview/reports)
+  // Load initial tab (overview)
   showAdminTab('tab-overview', null);
-  await loadReports();
+  await loadOverview();
 
   // Tab navigation
   document.querySelectorAll('[data-tab]').forEach(btn => {
@@ -64,6 +65,7 @@ function showAdminTab(tabId, loadFn) {
       loadAnnouncements,
       loadSalary,
       loadReports,
+      loadOverview,
       populateSalaryEmployeeFilter
     };
     if (loaders[loadFn]) loaders[loadFn]();
@@ -73,23 +75,265 @@ function showAdminTab(tabId, loadFn) {
 /* ══════════════════════════════════════════════
    ▌ REPORTS / OVERVIEW
    ══════════════════════════════════════════════ */
-async function loadReports() {
-  try {
-    Loader.show('Loading reports...');
-    const res = await API.getStats();
-    if (res.success) {
-      const s = res.data;
-      setEl('statTotalEmployees', s.totalEmployees ?? 0);
-      setEl('statTotalAttendance', s.totalAttendance ?? 0);
-      setEl('statTotalBonuses', formatCurrency(s.totalBonuses ?? 0));
-      setEl('statTotalDeductions', formatCurrency(s.totalDeductions ?? 0));
-    }
-  } catch (e) {
-    console.error('loadReports:', e);
-    Toast.error('Failed to load statistics', e.message);
-  } finally {
-    Loader.hide();
+
+// ── Helper: parse any date value to yyyy-MM-dd ──
+function normDate(val) {
+  if (!val) return '';
+  const s = String(val);
+  const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  const d = new Date(s);
+  if (!isNaN(d) && d.getFullYear() > 1970) {
+    return d.toISOString().split('T')[0];
   }
+  return '';
+}
+
+// ── Helper: parse time string or Date-based time ──
+function normTime(val) {
+  if (!val) return '';
+  const s = String(val);
+  const t = s.match(/(\d{2}:\d{2}:\d{2})/);
+  if (t) return t[1];
+  const d = new Date(s);
+  if (!isNaN(d)) {
+    return String(d.getHours()).padStart(2,'0') + ':' +
+           String(d.getMinutes()).padStart(2,'0') + ':' +
+           String(d.getSeconds()).padStart(2,'0');
+  }
+  return s;
+}
+
+// ── Helper: time string to minutes since midnight ──
+function timeToMins(t) {
+  if (!t) return null;
+  const p = t.split(':');
+  if (p.length < 2) return null;
+  return parseInt(p[0])*60 + parseInt(p[1]);
+}
+
+// ── Helper: minutes to HH:mm ──
+function minsToTime(m) {
+  if (m === null || m === undefined) return '—';
+  return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+}
+
+// ── Helper: duration between two HH:mm:ss strings ──
+function calcDuration(checkIn, checkOut) {
+  const a = timeToMins(checkIn), b = timeToMins(checkOut);
+  if (a === null || b === null || b <= a) return '—';
+  const diff = b - a;
+  return `${Math.floor(diff/60)}h ${diff%60}m`;
+}
+
+async function loadOverview() {
+  // Set current month default
+  const now = new Date();
+  const monthVal = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const reportMonthEl = document.getElementById('reportMonth');
+  if (reportMonthEl && !reportMonthEl.value) reportMonthEl.value = monthVal;
+
+  try {
+    // Fetch employees and all attendance in parallel
+    const [empRes, attRes] = await Promise.all([API.getEmployees(), API.getAttendance({})]);
+    if (!empRes.success) throw new Error(empRes.message);
+    if (!attRes.success) throw new Error(attRes.message);
+
+    AdminState.employees  = empRes.data || [];
+    // Normalize attendance records
+    AdminState.attendance = (attRes.data || []).map(r => ({
+      employeeId: String(r.employeeId || r.EmployeeID || '').trim(),
+      name:       String(r.name || r.Name || '').trim(),
+      date:       normDate(r.date || r.Date || ''),
+      checkIn:    normTime(r.checkIn || r.CheckIn || ''),
+      checkOut:   normTime(r.checkOut || r.CheckOut || '')
+    }));
+
+    populateSalaryEmployeeFilter();
+    renderTodayAttendance();
+    renderMonthlyReport();
+  } catch (e) {
+    console.error('loadOverview:', e);
+    Toast.error('Failed to load overview', e.message);
+  }
+}
+
+function renderTodayAttendance() {
+  const today = new Date().toISOString().split('T')[0];
+  const tbody = document.getElementById('todayAttBody');
+  if (!tbody) return;
+
+  const todayAtt = AdminState.attendance.filter(r => r.date === today);
+  const attendedIds = new Set(todayAtt.map(r => r.employeeId.toLowerCase()));
+
+  let present = 0, absent = 0;
+  const rows = AdminState.employees
+    .filter(e => e.role !== 'admin')
+    .map(emp => {
+      const rec = todayAtt.find(r => r.employeeId.toLowerCase() === emp.id.toLowerCase()
+        || r.name.toLowerCase() === emp.name.toLowerCase());
+      if (rec) present++; else absent++;
+      const hasIn  = rec && rec.checkIn;
+      const hasOut = rec && rec.checkOut;
+      const status = !rec
+        ? '<span class="badge badge-muted">Absent</span>'
+        : hasOut
+          ? '<span class="badge badge-blue">Complete</span>'
+          : '<span class="badge badge-gold">In Progress</span>';
+      return `<tr style="cursor:pointer" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
+        <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
+        <td><span class="badge badge-blue">${escapeHtml(emp.department || '—')}</span></td>
+        <td><span class="badge badge-green">${hasIn  ? rec.checkIn  : '—'}</span></td>
+        <td><span class="badge ${hasOut ? 'badge-blue' : 'badge-muted'}">${hasOut ? rec.checkOut : '—'}</span></td>
+        <td>${status}</td>
+      </tr>`;
+    });
+
+  setEl('todayPresentBadge', `${present} Present`);
+  setEl('todayAbsentBadge',  `${absent} Absent`);
+  tbody.innerHTML = rows.length ? rows.join('') :
+    `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No employees found</div></div></td></tr>`;
+}
+
+function renderMonthlyReport() {
+  const monthVal = document.getElementById('reportMonth')?.value;
+  if (!monthVal) return;
+  const [year, month] = monthVal.split('-').map(Number);
+  const tbody = document.getElementById('monthlyReportBody');
+  if (!tbody) return;
+
+  // Working days in the month (Mon–Fri)
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let workDays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const day = new Date(year, month-1, d).getDay();
+    if (day !== 0 && day !== 6) workDays++;
+  }
+
+  const rows = AdminState.employees
+    .filter(e => e.role !== 'admin')
+    .map(emp => {
+      const recs = AdminState.attendance.filter(r => {
+        const d = r.date;
+        if (!d) return false;
+        const [y,m] = d.split('-').map(Number);
+        const empMatch = r.employeeId.toLowerCase() === emp.id.toLowerCase()
+          || r.name.toLowerCase() === emp.name.toLowerCase();
+        return empMatch && y === year && m === month;
+      });
+
+      const daysPresent = recs.length;
+      const inMins  = recs.map(r => timeToMins(r.checkIn)).filter(v => v !== null);
+      const outMins = recs.map(r => timeToMins(r.checkOut)).filter(v => v !== null);
+      const avgIn  = inMins.length  ? Math.round(inMins.reduce((a,b)=>a+b,0)  / inMins.length)  : null;
+      const avgOut = outMins.length ? Math.round(outMins.reduce((a,b)=>a+b,0) / outMins.length) : null;
+
+      return `<tr style="cursor:pointer" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
+        <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
+        <td><span class="badge badge-blue">${escapeHtml(emp.department||'—')}</span></td>
+        <td><span class="badge ${daysPresent>0?'badge-green':'badge-muted'}">${daysPresent} / ${workDays} days</span></td>
+        <td>${avgIn  !== null ? minsToTime(avgIn)  : '—'}</td>
+        <td>${avgOut !== null ? minsToTime(avgOut) : '—'}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEmpDetail('${escapeHtml(emp.id)}')">🔍 View</button></td>
+      </tr>`;
+    });
+
+  tbody.innerHTML = rows.length ? rows.join('') :
+    `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No data</div></div></td></tr>`;
+}
+
+function openEmpDetail(empId) {
+  const emp = AdminState.employees.find(e => e.id === empId);
+  if (!emp) return;
+  AdminState.currentDetailEmp = emp;
+
+  // Set current month
+  const now = new Date();
+  const monthVal = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const detailMonthEl = document.getElementById('detailMonth');
+  if (detailMonthEl) detailMonthEl.value = monthVal;
+
+  setEl('detailEmpName', escapeHtml(emp.name));
+  setEl('detailEmpInfo', `${escapeHtml(emp.department||'—')} • ${escapeHtml(emp.position||'—')} • ID: ${escapeHtml(emp.id)}`);
+
+  switchAdminTab('tab-emp-detail', null, emp.name);
+  renderEmpDetail();
+}
+
+function renderEmpDetail() {
+  const emp = AdminState.currentDetailEmp;
+  if (!emp) return;
+
+  const monthVal = document.getElementById('detailMonth')?.value;
+  if (!monthVal) return;
+  const [year, month] = monthVal.split('-').map(Number);
+
+  // Get all records for this employee this month
+  const recs = AdminState.attendance.filter(r => {
+    if (!r.date) return false;
+    const [y,m] = r.date.split('-').map(Number);
+    return (r.employeeId.toLowerCase() === emp.id.toLowerCase()
+      || r.name.toLowerCase() === emp.name.toLowerCase())
+      && y === year && m === month;
+  });
+
+  // Build full calendar for the month
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let daysPresent = 0, daysAbsent = 0;
+  const inMins = [], outMins = [];
+  const detailRows = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(year, month-1, d).getDay();
+    const dayName = dayNames[dow];
+    const isWeekend = dow === 0 || dow === 6;
+    const rec = recs.find(r => r.date === dateStr);
+
+    if (rec) {
+      daysPresent++;
+      if (timeToMins(rec.checkIn)  !== null) inMins.push(timeToMins(rec.checkIn));
+      if (timeToMins(rec.checkOut) !== null) outMins.push(timeToMins(rec.checkOut));
+    } else if (!isWeekend) {
+      // Only count weekday absences
+      const isPast = new Date(dateStr) < new Date(new Date().toDateString());
+      if (isPast) daysAbsent++;
+    }
+
+    const status = rec
+      ? (rec.checkOut ? '<span class="badge badge-green">Complete</span>'
+                      : '<span class="badge badge-gold">In Progress</span>')
+      : isWeekend
+        ? '<span class="badge badge-muted">Weekend</span>'
+        : new Date(dateStr) > new Date(new Date().toDateString())
+          ? '<span class="badge badge-muted">Upcoming</span>'
+          : '<span class="badge badge-muted">Absent</span>';
+
+    const rowStyle = isWeekend ? 'opacity:0.4' : '';
+    detailRows.push(`<tr style="${rowStyle}">
+      <td class="bold">${dateStr}</td>
+      <td>${dayName}</td>
+      <td><span class="badge badge-green">${rec?.checkIn  || '—'}</span></td>
+      <td><span class="badge badge-blue">${rec?.checkOut || '—'}</span></td>
+      <td>${rec ? calcDuration(rec.checkIn, rec.checkOut) : '—'}</td>
+      <td>${status}</td>
+    </tr>`);
+  }
+
+  const avgIn  = inMins.length  ? Math.round(inMins.reduce((a,b)=>a+b,0)  / inMins.length)  : null;
+  const avgOut = outMins.length ? Math.round(outMins.reduce((a,b)=>a+b,0) / outMins.length) : null;
+
+  setEl('detailDaysPresent', daysPresent);
+  setEl('detailDaysAbsent',  daysAbsent);
+  setEl('detailAvgIn',  avgIn  !== null ? minsToTime(avgIn)  : '—');
+  setEl('detailAvgOut', avgOut !== null ? minsToTime(avgOut) : '—');
+  setEl('detailTableBody', detailRows.join(''));
+}
+
+async function loadReports() {
+  // Legacy — redirect to loadOverview
+  await loadOverview();
 }
 
 /* ══════════════════════════════════════════════
