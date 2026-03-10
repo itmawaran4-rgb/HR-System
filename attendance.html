@@ -203,11 +203,13 @@ async function loadAttendanceHistory() {
       String(r.employeeId || '').trim().toLowerCase() === userId
     );
 
-    // If still empty, show debug info
+    // If still empty, show raw first record to debug
     if (!records.length && allRecords.length > 0) {
-      const ids = [...new Set(allRecords.map(r => r.employeeId))].join(', ');
-      console.warn('No records matched. user.id =', user.id, '| IDs in sheet:', ids);
-      Toast.warning('تێبینی', `ناسنامەکەت (${user.id}) لە شیت نەدۆزرایەوە. IDs: ${ids}`);
+      const firstRaw = JSON.stringify(allRecords[0]);
+      console.warn('user.id =', user.id, '| first raw record:', firstRaw);
+      Toast.warning('DEBUG — تێبینی', `user.id="${user.id}" | ئەوەی گەڕایەوە: ${firstRaw}`);
+    } else if (!allRecords.length) {
+      Toast.warning('DEBUG', 'هیچ داتایەک نەگەڕایەوە لە سێرڤەر');
     }
 
     const today = new Date().toISOString().split('T')[0];
