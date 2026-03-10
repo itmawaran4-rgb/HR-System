@@ -272,7 +272,17 @@ async function doCheckIn() {
     btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
     const res = await API.checkIn(user.id, user.name);
     if (res.success) {
+      const now = res.data && res.data.checkIn ? res.data.checkIn : new Date().toLocaleTimeString('en-GB');
       Toast.success('هاتنەژوورەوە تۆماركرا! 📍', `بەخێربێیت، ${user.name}! (${loc.distance} مەتر لە ئۆفیس)`);
+      // Update UI directly from API response — don't wait for history reload
+      btn.disabled = true;
+      btn.innerHTML = '✅ هاتنەژوورەوە';
+      document.getElementById('checkOutBtn').disabled = false;
+      document.getElementById('checkOutBtn').innerHTML = '🔴 چوونەدەرەوە';
+      document.getElementById('statusDot').className = 'status-dot checked-in';
+      document.getElementById('statusText').textContent = `هاتوویتەژوورەوە لە ${now}`;
+      document.getElementById('todayCheckIn').textContent = now;
+      document.getElementById('todayCheckOut').textContent = '—';
       await loadAttendanceHistory();
     } else throw new Error(res.message);
   } catch (e) {
@@ -293,7 +303,17 @@ async function doCheckOut() {
     btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
     const res = await API.checkOut(user.id);
     if (res.success) {
+      const now = res.data && res.data.checkOut ? res.data.checkOut : new Date().toLocaleTimeString('en-GB');
+      const ci  = document.getElementById('todayCheckIn').textContent;
       Toast.success('چوونەدەرەوە تۆماركرا! 📍', `بەیانت باش! (${loc.distance} مەتر لە ئۆفیس)`);
+      // Update UI directly
+      btn.disabled = true;
+      btn.innerHTML = '🔴 چوونەدەرەوە';
+      document.getElementById('checkInBtn').disabled = true;
+      document.getElementById('statusDot').className = 'status-dot';
+      document.getElementById('statusDot').style.background = 'var(--blue-500)';
+      document.getElementById('statusText').textContent = `ڕۆژ تەواوبوو — ${ci} → ${now}`;
+      document.getElementById('todayCheckOut').textContent = now;
       await loadAttendanceHistory();
     } else throw new Error(res.message);
   } catch (e) {
