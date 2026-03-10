@@ -45,6 +45,10 @@
     <a class="nav-item" data-tab="tab-announcements" data-load="loadAnnouncements">
       <span class="nav-icon">📢</span> Announcements
     </a>
+    <a class="nav-item" data-tab="tab-requests" data-load="loadRequests">
+      <span class="nav-icon">📋</span> Requests
+      <span class="badge badge-gold" id="pendingRequestsBadge" style="margin-right:auto;font-size:11px"></span>
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -124,6 +128,7 @@
                 <th>Days Present</th>
                 <th>Avg Check-In</th>
                 <th>Avg Check-Out</th>
+                <th>Leave Days (Year)</th>
                 <th>Details</th>
               </tr>
             </thead>
@@ -340,6 +345,27 @@
       </div>
     </div>
 
+    <!-- ══════════════════════════════
+         TAB: REQUESTS
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-requests">
+      <div class="page-header">
+        <h1 class="page-title">Pending Requests</h1>
+        <p class="page-subtitle">Leave requests & outside-office attendance approvals</p>
+      </div>
+
+      <!-- Filter tabs -->
+      <div class="role-tabs" style="margin-bottom:20px">
+        <button class="role-tab active" id="reqTabAll"    onclick="filterRequestsTab('all')">📋 All</button>
+        <button class="role-tab"        id="reqTabLeave"  onclick="filterRequestsTab('leave')">🌴 Leave</button>
+        <button class="role-tab"        id="reqTabOutside" onclick="filterRequestsTab('outside')">📍 Outside Office</button>
+      </div>
+
+      <div id="requestsList">
+        <div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading...</div>
+      </div>
+    </div>
+
   </main><!-- /page-content -->
 </div><!-- /main-content -->
 
@@ -496,7 +522,8 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
       'tab-attendance':    'Attendance',
       'tab-salary':        'Salary & Bonuses',
       'tab-announcements': 'Announcements',
-      'tab-emp-detail':    'Employee Detail'
+      'tab-emp-detail':    'Employee Detail',
+      'tab-requests':      'Requests'
     };
     document.getElementById('topbarTitleEl').textContent = titles[btn.dataset.tab] || 'Dashboard';
   });
