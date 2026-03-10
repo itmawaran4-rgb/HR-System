@@ -84,7 +84,9 @@ function normDate(val) {
   if (iso) return iso[1];
   const d = new Date(s);
   if (!isNaN(d) && d.getFullYear() > 1970) {
-    return d.toISOString().split('T')[0];
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
   }
   return '';
 }
@@ -159,7 +161,11 @@ async function loadOverview() {
 }
 
 function renderTodayAttendance() {
-  const today = new Date().toISOString().split('T')[0];
+  // Use local date (not UTC) to match server timezone
+  const _now = new Date();
+  const today = _now.getFullYear() + '-' +
+    String(_now.getMonth()+1).padStart(2,'0') + '-' +
+    String(_now.getDate()).padStart(2,'0');
   const tbody = document.getElementById('todayAttBody');
   if (!tbody) return;
 
@@ -207,7 +213,7 @@ function renderMonthlyReport() {
   let workDays = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const day = new Date(year, month-1, d).getDay();
-    if (day !== 0 && day !== 6) workDays++;
+    if (day !== 5) workDays++; // Only Friday is weekend
   }
 
   const rows = AdminState.employees
@@ -288,7 +294,7 @@ function renderEmpDetail() {
     const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dow = new Date(year, month-1, d).getDay();
     const dayName = dayNames[dow];
-    const isWeekend = dow === 0 || dow === 6;
+    const isWeekend = dow === 5; // Only Friday is weekend
     const rec = recs.find(r => r.date === dateStr);
 
     if (rec) {
