@@ -185,25 +185,34 @@ async function loadAttendanceHistory() {
   document.getElementById('attHistoryBody').innerHTML =
     `<tr><td colspan="4" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>بارکراوە...</td></tr>`;
   try {
-    const res = await API.getAttendance({ employeeId: user.id });
+    // Fetch ALL attendance records — filter client-side to avoid ID mismatch issues
+    const res = await API.getAttendance({});
     if (!res.success) throw new Error(res.message);
-    // Normalize field names (Google Sheets may return CheckIn or checkIn)
-    const records = (res.data || []).map(r => ({
-      ...r,
-      date:     r.date     || r.Date     || '',
-      checkIn:  r.checkIn  || r.CheckIn  || '',
-      checkOut: r.checkOut || r.CheckOut || '',
-      employeeId: r.employeeId || r.EmployeeID || r.employeeid || ''
+
+    // Normalize all field name variations from Google Sheets
+    const allRecords = (res.data || []).map(r => ({
+      date:       r.date       || r.Date       || r.DATE       || '',
+      checkIn:    r.checkIn    || r.CheckIn    || r.CHECKIN    || r.check_in  || '',
+      checkOut:   r.checkOut   || r.CheckOut   || r.CHECKOUT   || r.check_out || '',
+      employeeId: r.employeeId || r.EmployeeID || r.employeeid || r.EMPLOYEEID || ''
     }));
 
-    const today = new Date().toISOString().split('T')[0];
-    // Match by date (also handle cases where date has time component)
-    todayRecord = records.find(r => r.date && r.date.startsWith(today));
-    // If multiple records today, pick the latest one
-    if (!todayRecord) {
-      const todayRecords = records.filter(r => r.date && r.date.startsWith(today));
-      if (todayRecords.length) todayRecord = todayRecords[todayRecords.length - 1];
+    // Filter by current user — compare lowercased and trimmed
+    const userId = String(user.id || '').trim().toLowerCase();
+    const records = allRecords.filter(r =>
+      String(r.employeeId || '').trim().toLowerCase() === userId
+    );
+
+    // If still empty, show debug info
+    if (!records.length && allRecords.length > 0) {
+      const ids = [...new Set(allRecords.map(r => r.employeeId))].join(', ');
+      console.warn('No records matched. user.id =', user.id, '| IDs in sheet:', ids);
+      Toast.warning('تێبینی', `ناسنامەکەت (${user.id}) لە شیت نەدۆزرایەوە. IDs: ${ids}`);
     }
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecords = records.filter(r => r.date && r.date.startsWith(today));
+    todayRecord = todayRecords.length ? todayRecords[todayRecords.length - 1] : null;
     updateTodayStatus(todayRecord);
 
     const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
