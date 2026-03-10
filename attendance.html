@@ -1,93 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ckb" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR Nexus — Attendance</title>
+  <title>HR MAWARAN — ئامادەبوون</title>
   <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .sidebar { right: 0; left: auto; transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-right: 260px; margin-left: 0; }
+    .topbar { flex-direction: row-reverse; }
+    .topbar-title { margin-right: 12px; margin-left: 0; }
+    .nav-item { flex-direction: row-reverse; text-align: right; }
+    .nav-icon { margin-right: 0; margin-left: 10px; }
+    .sidebar-header { flex-direction: row-reverse; }
+    .sidebar-user { text-align: right; }
+    .page-header { text-align: right; }
+    .card-header { flex-direction: row-reverse; }
+    .card-title { flex-direction: row-reverse; }
+    @media (max-width: 768px) {
+      .sidebar { right: 0; left: auto; transform: translateX(110%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-right: 0; }
+    }
+    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+  </style>
 </head>
 <body>
 <div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo-icon">🏢</div>
-    <div class="sidebar-logo-text">
-      <div class="brand-name">HR Nexus</div>
-      <div class="brand-sub">Employee Portal</div>
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="brand-name">HR MAWARAN</div>
+        <div class="brand-sub">پۆرتاڵی کارمەند</div>
+      </div>
     </div>
   </div>
   <div class="sidebar-user">
-    <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
-    <div class="sidebar-user-role" id="sidebarUserRole">Employee</div>
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-section-label">Main Menu</div>
-    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> My Profile</a>
-    <a class="nav-item active" href="attendance.html"><span class="nav-icon">🕐</span> Attendance</a>
-    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> Announcements</a>
-    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> My Salary</a>
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item active" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
   </div>
 </aside>
 
-<!-- Main Content -->
 <div class="main-content">
   <header class="topbar">
-    <button class="topbar-hamburger" id="hamburger">☰</button>
-    <span class="topbar-title">Attendance</span>
-    <div class="topbar-spacer"></div>
-    <span class="topbar-date" id="topbarDate"></span>
     <div class="topbar-avatar" id="topbarAvatar">?</div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-title">ئامادەبوون</span>
+    <button class="topbar-hamburger" id="hamburger">☰</button>
   </header>
-
   <main class="page-content">
     <div class="page-header">
-      <h1 class="page-title">Attendance Tracker</h1>
-      <p class="page-subtitle">Record your daily check-in and check-out times</p>
+      <h1 class="page-title">بەدواداچوونی ئامادەبوون</h1>
+      <p class="page-subtitle">کاتی هاتنەژوورەوە و چوونەدەرەوەی ڕۆژانەت تۆمار بکە</p>
     </div>
 
-    <!-- Clock & Actions -->
+    <!-- Clock -->
     <div class="attendance-clock">
       <div class="clock-display" id="clockDisplay">00:00:00</div>
-      <div class="clock-date" id="clockDate">Loading date...</div>
-
+      <div class="clock-date" id="clockDate">چاوەڕێبکە...</div>
       <div class="attendance-actions">
-        <button class="btn btn-success clock-btn" id="checkInBtn" onclick="doCheckIn()">
-          ✅ Check In
-        </button>
-        <button class="btn btn-danger clock-btn" id="checkOutBtn" onclick="doCheckOut()" disabled>
-          🔴 Check Out
-        </button>
+        <button class="btn btn-success clock-btn" id="checkInBtn" onclick="doCheckIn()">✅ هاتنەژوورەوە</button>
+        <button class="btn btn-danger clock-btn" id="checkOutBtn" onclick="doCheckOut()" disabled>🔴 چوونەدەرەوە</button>
       </div>
-
       <div class="status-indicator" id="statusIndicator">
         <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Not checked in today</span>
+        <span id="statusText">ئەمڕۆ هێشتا نەهاتووەتەژوورەوە</span>
       </div>
-
-      <!-- Location indicator -->
       <div class="status-indicator" id="locationIndicator" style="margin-top:10px;font-size:13px;color:var(--text-muted)">
         <span>📍</span>
-        <span id="locationText">Location will be checked on check-in/out</span>
+        <span id="locationText">شوێنەکەت لە کاتی هاتنەژوورەوە/چوونەدەرەوە پشکنراوە دەبێت</span>
       </div>
     </div>
 
     <!-- Today's Summary -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px" id="todaySummary">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
       <div class="stat-card green">
         <div class="stat-info">
-          <div class="stat-label">Check-In Time</div>
+          <div class="stat-label">کاتی هاتنەژوورەوە</div>
           <div class="stat-value" id="todayCheckIn" style="font-size:22px">—</div>
         </div>
         <div class="stat-icon green">✅</div>
       </div>
       <div class="stat-card blue">
         <div class="stat-info">
-          <div class="stat-label">Check-Out Time</div>
+          <div class="stat-label">کاتی چوونەدەرەوە</div>
           <div class="stat-value" id="todayCheckOut" style="font-size:22px">—</div>
         </div>
         <div class="stat-icon blue">🔴</div>
@@ -99,23 +115,22 @@
       <div class="card-header">
         <div class="card-title">
           <div class="card-title-icon blue">📋</div>
-          Attendance History
+          مێژووی ئامادەبوون
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄 Refresh</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄 نوێکردنەوە</button>
       </div>
-
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Check-In</th>
-              <th>Check-Out</th>
-              <th>Status</th>
+              <th>بەروار</th>
+              <th>هاتنەژوورەوە</th>
+              <th>چوونەدەرەوە</th>
+              <th>دۆخ</th>
             </tr>
           </thead>
           <tbody id="attHistoryBody">
-            <tr><td colspan="4" class="loading-rows">Loading history...</td></tr>
+            <tr><td colspan="4" class="loading-rows">مێژوو بارکراوە...</td></tr>
           </tbody>
         </table>
       </div>
@@ -127,53 +142,31 @@
 <script>
 let todayRecord = null;
 
-/* ── Company Location Config ── */
 const COMPANY_LOCATION = {
   lat: 36.15638865284262,
   lng: 44.019461850607506,
-  maxDistance: 100 // meters
+  maxDistance: 100
 };
 
-/**
- * Calculate distance between two coordinates in meters (Haversine formula)
- */
 function calcDistance(lat1, lng1, lat2, lng2) {
   const R = 6371000;
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-/**
- * Get user location and validate distance from company
- * Returns promise resolving to { allowed, distance }
- */
 function checkLocation() {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported by your browser.'));
-      return;
-    }
+    if (!navigator.geolocation) { reject(new Error('براوزەرەکەت پشتیوانی شوێن ناکات.')); return; }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const dist = calcDistance(
-          pos.coords.latitude, pos.coords.longitude,
-          COMPANY_LOCATION.lat, COMPANY_LOCATION.lng
-        );
+      pos => {
+        const dist = calcDistance(pos.coords.latitude, pos.coords.longitude, COMPANY_LOCATION.lat, COMPANY_LOCATION.lng);
         resolve({ allowed: dist <= COMPANY_LOCATION.maxDistance, distance: Math.round(dist) });
       },
-      (err) => {
-        const msgs = {
-          1: 'Location permission denied. Please allow location access.',
-          2: 'Location unavailable. Please try again.',
-          3: 'Location request timed out. Please try again.'
-        };
-        reject(new Error(msgs[err.code] || 'Failed to get location.'));
+      err => {
+        const msgs = { 1: 'مۆڵەتی شوێن دەست پێ نەکراوە. تکایە مۆڵەتی شوێن بدە.', 2: 'شوێن بەردەست نیە. دووبارە هەوڵبدەرەوە.', 3: 'ئاگادارکردنەوەی شوێن کاتی تەواوکرد.' };
+        reject(new Error(msgs[err.code] || 'شوێن بەدەستنەهات.'));
       },
       { timeout: 10000, maximumAge: 0, enableHighAccuracy: true }
     );
@@ -183,7 +176,6 @@ function checkLocation() {
 document.addEventListener('DOMContentLoaded', async () => {
   const user = requireAuth(false);
   if (!user) return;
-
   startClock('clockDisplay', 'clockDate');
   await loadAttendanceHistory();
 });
@@ -191,49 +183,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadAttendanceHistory() {
   const user = Session.get();
   document.getElementById('attHistoryBody').innerHTML =
-    `<tr><td colspan="4" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>`;
-
+    `<tr><td colspan="4" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>بارکراوە...</td></tr>`;
   try {
     const res = await API.getAttendance({ employeeId: user.id });
     if (!res.success) throw new Error(res.message);
-
     const records = res.data || [];
-    const today   = new Date().toISOString().split('T')[0];
-
-    // Check today's status
+    const today = new Date().toISOString().split('T')[0];
     todayRecord = records.find(r => r.date === today);
     updateTodayStatus(todayRecord);
-
-    // Render table (newest first)
     const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const tbody  = document.getElementById('attHistoryBody');
-
+    const tbody = document.getElementById('attHistoryBody');
     if (!sorted.length) {
-      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No attendance records yet</div></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">هیچ تۆمارێکی ئامادەبوون نیە</div></div></td></tr>`;
       return;
     }
-
     tbody.innerHTML = sorted.map(r => {
       const complete = r.checkOut && r.checkOut !== '—';
-      return `
-        <tr>
-          <td class="bold">${formatDate(r.date)}</td>
-          <td><span class="badge badge-green">${r.checkIn || '—'}</span></td>
-          <td>${complete ? `<span class="badge badge-blue">${r.checkOut}</span>` : '<span class="badge badge-muted">—</span>'}</td>
-          <td>${complete
-            ? '<span class="badge badge-green">Complete</span>'
-            : r.checkIn
-              ? '<span class="badge badge-gold">In Progress</span>'
-              : '<span class="badge badge-muted">Absent</span>'
-          }</td>
-        </tr>
-      `;
+      return `<tr>
+        <td class="bold">${formatDate(r.date)}</td>
+        <td><span class="badge badge-green">${r.checkIn || '—'}</span></td>
+        <td>${complete ? `<span class="badge badge-blue">${r.checkOut}</span>` : '<span class="badge badge-muted">—</span>'}</td>
+        <td>${complete
+          ? '<span class="badge badge-green">تەواو</span>'
+          : r.checkIn
+            ? '<span class="badge badge-gold">بەردەوامە</span>'
+            : '<span class="badge badge-muted">غایب</span>'
+        }</td>
+      </tr>`;
     }).join('');
-
   } catch (e) {
     document.getElementById('attHistoryBody').innerHTML =
       `<tr><td colspan="4" class="loading-rows text-red">${e.message}</td></tr>`;
-    Toast.error('Failed to load attendance', e.message);
+    Toast.error('هەڵە', e.message);
   }
 }
 
@@ -244,79 +225,62 @@ function updateTodayStatus(record) {
   const statusText  = document.getElementById('statusText');
   const todayCI     = document.getElementById('todayCheckIn');
   const todayCO     = document.getElementById('todayCheckOut');
-
   if (!record) {
-    checkInBtn.disabled  = false;
-    checkOutBtn.disabled = true;
-    statusDot.className  = 'status-dot';
-    statusText.textContent = 'Not checked in today';
-    todayCI.textContent  = '—';
-    todayCO.textContent  = '—';
+    checkInBtn.disabled = false; checkOutBtn.disabled = true;
+    statusDot.className = 'status-dot'; statusText.textContent = 'ئەمڕۆ هێشتا نەهاتووەتەژوورەوە';
+    todayCI.textContent = '—'; todayCO.textContent = '—';
   } else if (record.checkIn && (!record.checkOut || record.checkOut === '—')) {
-    // Checked in but not out
-    checkInBtn.disabled  = true;
-    checkOutBtn.disabled = false;
-    statusDot.className  = 'status-dot checked-in';
-    statusText.textContent = `Checked in at ${record.checkIn}`;
-    todayCI.textContent  = record.checkIn;
-    todayCO.textContent  = '—';
+    checkInBtn.disabled = true; checkOutBtn.disabled = false;
+    statusDot.className = 'status-dot checked-in';
+    statusText.textContent = `هاتوویتەژوورەوە لە ${record.checkIn}`;
+    todayCI.textContent = record.checkIn; todayCO.textContent = '—';
   } else {
-    // Fully complete
-    checkInBtn.disabled  = true;
-    checkOutBtn.disabled = true;
-    statusDot.className  = 'status-dot';
-    statusDot.style.background = 'var(--blue-500)';
-    statusText.textContent = `Day complete — ${record.checkIn} → ${record.checkOut}`;
-    todayCI.textContent  = record.checkIn;
-    todayCO.textContent  = record.checkOut;
+    checkInBtn.disabled = true; checkOutBtn.disabled = true;
+    statusDot.className = 'status-dot'; statusDot.style.background = 'var(--blue-500)';
+    statusText.textContent = `ڕۆژ تەواوبوو — ${record.checkIn} → ${record.checkOut}`;
+    todayCI.textContent = record.checkIn; todayCO.textContent = record.checkOut;
   }
 }
 
 async function doCheckIn() {
   const user = Session.get();
-  const btn  = document.getElementById('checkInBtn');
+  const btn = document.getElementById('checkInBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner spinner-sm"></span> Getting location...';
-
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
   try {
     const loc = await checkLocation();
-    if (!loc.allowed) {
-      throw new Error(`You are ${loc.distance}m away from the office. Must be within ${COMPANY_LOCATION.maxDistance}m to check in.`);
-    }
-    btn.innerHTML = '<span class="spinner spinner-sm"></span> Checking in...';
+    if (!loc.allowed) throw new Error(`تۆ ${loc.distance} مەتر دوورە لە ئۆفیس. دەبێت لە ناو ${COMPANY_LOCATION.maxDistance} مەتر بێیت.`);
+    btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
     const res = await API.checkIn(user.id, user.name);
     if (res.success) {
-      Toast.success('Checked In! 📍', `Welcome, ${user.name}! (${loc.distance}m from office)`);
+      Toast.success('هاتنەژوورەوە تۆماركرا! 📍', `بەخێربێیت، ${user.name}! (${loc.distance} مەتر لە ئۆفیس)`);
       await loadAttendanceHistory();
     } else throw new Error(res.message);
   } catch (e) {
-    Toast.error('Check-In Failed', e.message);
+    Toast.error('هاتنەژوورەوە سەرکەوتوو نەبوو', e.message);
     btn.disabled = false;
-    btn.innerHTML = '✅ Check In';
+    btn.innerHTML = '✅ هاتنەژوورەوە';
   }
 }
 
 async function doCheckOut() {
   const user = Session.get();
-  const btn  = document.getElementById('checkOutBtn');
+  const btn = document.getElementById('checkOutBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner spinner-sm"></span> Getting location...';
-
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
   try {
     const loc = await checkLocation();
-    if (!loc.allowed) {
-      throw new Error(`You are ${loc.distance}m away from the office. Must be within ${COMPANY_LOCATION.maxDistance}m to check out.`);
-    }
-    btn.innerHTML = '<span class="spinner spinner-sm"></span> Checking out...';
+    if (!loc.allowed) throw new Error(`تۆ ${loc.distance} مەتر دوورە لە ئۆفیس. دەبێت لە ناو ${COMPANY_LOCATION.maxDistance} مەتر بێیت.`);
+    btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
     const res = await API.checkOut(user.id);
     if (res.success) {
-      Toast.success('Checked Out! 📍', `See you tomorrow! (${loc.distance}m from office)`);
+      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `بەیانت باش! (${loc.distance} مەتر لە ئۆفیس)`);
       await loadAttendanceHistory();
     } else throw new Error(res.message);
   } catch (e) {
-    Toast.error('Check-Out Failed', e.message);
+    Toast.error('چوونەدەرەوە سەرکەوتوو نەبوو', e.message);
     btn.disabled = false;
-    btn.innerHTML = '🔴 Check Out';
+    btn.innerHTML = '🔴 چوونەدەرەوە';
   }
 }
 </script>
