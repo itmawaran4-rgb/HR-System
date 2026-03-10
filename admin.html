@@ -71,65 +71,131 @@
          TAB: OVERVIEW / REPORTS
          ══════════════════════════════ -->
     <div class="admin-tab-content active" id="tab-overview">
-      <div class="page-header">
-        <h1 class="page-title">Dashboard Overview</h1>
-        <p class="page-subtitle">Company-wide statistics at a glance</p>
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Dashboard Overview</h1>
+          <p class="page-subtitle" id="overviewSubtitle">Today's attendance &amp; monthly report</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadOverview()">🔄 Refresh</button>
       </div>
 
-      <!-- Stats -->
-      <div class="stats-grid">
-        <div class="stat-card gold">
-          <div class="stat-info">
-            <div class="stat-label">Total Employees</div>
-            <div class="stat-value" id="statTotalEmployees">—</div>
-            <div class="stat-sub">Active staff members</div>
+      <!-- ── SECTION 1: Today's Attendance ── -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon green">🕐</div>Today's Attendance</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge badge-green" id="todayPresentBadge">— Present</span>
+            <span class="badge badge-muted" id="todayAbsentBadge">— Absent</span>
           </div>
-          <div class="stat-icon gold">👥</div>
         </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="todayAttBody">
+              <tr><td colspan="5" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: Monthly Summary ── -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon blue">📊</div>Monthly Report</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="month" class="form-control" id="reportMonth" style="width:160px;padding:6px 10px">
+            <button class="btn btn-secondary btn-sm" onclick="renderMonthlyReport()">Go</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Days Present</th>
+                <th>Avg Check-In</th>
+                <th>Avg Check-Out</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="monthlyReportBody">
+              <tr><td colspan="6" class="loading-rows">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: EMPLOYEE DETAIL
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-emp-detail">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <button class="btn btn-ghost btn-sm" onclick="switchAdminTab('tab-overview','loadOverview','Overview')" style="margin-bottom:8px">← Back</button>
+          <h1 class="page-title" id="detailEmpName">Employee Detail</h1>
+          <p class="page-subtitle" id="detailEmpInfo">—</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="month" class="form-control" id="detailMonth" style="width:160px;padding:6px 10px">
+          <button class="btn btn-secondary btn-sm" onclick="renderEmpDetail()">Go</button>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="stats-grid" style="margin-bottom:20px">
         <div class="stat-card green">
           <div class="stat-info">
-            <div class="stat-label">Attendance Records</div>
-            <div class="stat-value" id="statTotalAttendance">—</div>
-            <div class="stat-sub">Total check-ins logged</div>
+            <div class="stat-label">Days Present</div>
+            <div class="stat-value" id="detailDaysPresent">—</div>
           </div>
-          <div class="stat-icon green">🕐</div>
+          <div class="stat-icon green">✅</div>
         </div>
         <div class="stat-card blue">
           <div class="stat-info">
-            <div class="stat-label">Total Bonuses</div>
-            <div class="stat-value" id="statTotalBonuses">—</div>
-            <div class="stat-sub">Across all employees</div>
+            <div class="stat-label">Avg Check-In</div>
+            <div class="stat-value" id="detailAvgIn" style="font-size:20px">—</div>
           </div>
-          <div class="stat-icon blue">🎁</div>
+          <div class="stat-icon blue">🕐</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-info">
+            <div class="stat-label">Avg Check-Out</div>
+            <div class="stat-value" id="detailAvgOut" style="font-size:20px">—</div>
+          </div>
+          <div class="stat-icon gold">🕔</div>
         </div>
         <div class="stat-card rose">
           <div class="stat-info">
-            <div class="stat-label">Total Deductions</div>
-            <div class="stat-value" id="statTotalDeductions">—</div>
-            <div class="stat-sub">Across all employees</div>
+            <div class="stat-label">Days Absent</div>
+            <div class="stat-value" id="detailDaysAbsent">—</div>
           </div>
-          <div class="stat-icon rose">📉</div>
+          <div class="stat-icon rose">❌</div>
         </div>
       </div>
 
-      <!-- Quick actions -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><div class="card-title-icon gold">⚡</div>Quick Actions</div>
+          <div class="card-title"><div class="card-title-icon blue">📋</div>Daily Records</div>
         </div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="switchAdminTab('tab-employees','loadEmployees','Employees')">
-            ➕ Add Employee
-          </button>
-          <button class="btn btn-info" onclick="switchAdminTab('tab-announcements','loadAnnouncements','Announcements')">
-            📢 Post Announcement
-          </button>
-          <button class="btn btn-success" onclick="switchAdminTab('tab-salary','loadSalary','Salary & Bonuses')">
-            💰 Manage Salaries
-          </button>
-          <button class="btn btn-secondary" onclick="switchAdminTab('tab-attendance','loadAttendance','Attendance')">
-            📋 View Attendance
-          </button>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Day</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Status</th></tr>
+            </thead>
+            <tbody id="detailTableBody">
+              <tr><td colspan="6" class="loading-rows">Loading...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -429,7 +495,8 @@ document.querySelectorAll('[data-tab]').forEach(btn => {
       'tab-employees':     'Employees',
       'tab-attendance':    'Attendance',
       'tab-salary':        'Salary & Bonuses',
-      'tab-announcements': 'Announcements'
+      'tab-announcements': 'Announcements',
+      'tab-emp-detail':    'Employee Detail'
     };
     document.getElementById('topbarTitleEl').textContent = titles[btn.dataset.tab] || 'Dashboard';
   });
