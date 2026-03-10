@@ -1,506 +1,802 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR Nexus — Admin Dashboard</title>
-  <link rel="stylesheet" href="assets/style.css">
-</head>
-<body>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<!-- ═══════════════════════════════════════
-     SIDEBAR
-     ═══════════════════════════════════════ -->
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-header">
-    <div class="sidebar-logo-icon">🏢</div>
-    <div class="sidebar-logo-text">
-      <div class="brand-name">HR Nexus</div>
-      <div class="brand-sub">Admin Dashboard</div>
-    </div>
-  </div>
-
-  <div class="sidebar-user">
-    <div class="sidebar-user-name" id="sidebarUserName">Admin</div>
-    <div class="sidebar-user-role" id="sidebarUserRole">HR Admin</div>
-  </div>
-
-  <nav class="sidebar-nav">
-    <div class="nav-section-label">Dashboard</div>
-    <a class="nav-item active" data-tab="tab-overview" data-load="loadReports">
-      <span class="nav-icon">📊</span> Overview
-    </a>
-
-    <div class="nav-section-label">Management</div>
-    <a class="nav-item" data-tab="tab-employees" data-load="loadEmployees">
-      <span class="nav-icon">👥</span> Employees
-    </a>
-    <a class="nav-item" data-tab="tab-attendance" data-load="loadAttendance">
-      <span class="nav-icon">🕐</span> Attendance
-    </a>
-    <a class="nav-item" data-tab="tab-salary" data-load="loadSalary">
-      <span class="nav-icon">💰</span> Salary & Bonuses
-    </a>
-    <a class="nav-item" data-tab="tab-announcements" data-load="loadAnnouncements">
-      <span class="nav-icon">📢</span> Announcements
-    </a>
-  </nav>
-
-  <div class="sidebar-footer">
-    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
-  </div>
-</aside>
-
-<!-- ═══════════════════════════════════════
-     MAIN CONTENT
-     ═══════════════════════════════════════ -->
-<div class="main-content">
-  <!-- Topbar -->
-  <header class="topbar">
-    <button class="topbar-hamburger" id="hamburger">☰</button>
-    <span class="topbar-title" id="topbarTitleEl">Overview</span>
-    <div class="topbar-spacer"></div>
-    <span class="topbar-date" id="topbarDate"></span>
-    <div class="topbar-avatar" id="topbarAvatar">HR</div>
-  </header>
-
-  <main class="page-content">
-
-    <!-- ══════════════════════════════
-         TAB: OVERVIEW / REPORTS
-         ══════════════════════════════ -->
-    <div class="admin-tab-content active" id="tab-overview">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <h1 class="page-title">Dashboard Overview</h1>
-          <p class="page-subtitle" id="overviewSubtitle">Today's attendance &amp; monthly report</p>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="loadOverview()">🔄 Refresh</button>
-      </div>
-
-      <!-- ── SECTION 1: Today's Attendance ── -->
-      <div class="card" style="margin-bottom:24px">
-        <div class="card-header">
-          <div class="card-title"><div class="card-title-icon green">🕐</div>Today's Attendance</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span class="badge badge-green" id="todayPresentBadge">— Present</span>
-            <span class="badge badge-muted" id="todayAbsentBadge">— Absent</span>
-          </div>
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Department</th>
-                <th>Check-In</th>
-                <th>Check-Out</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="todayAttBody">
-              <tr><td colspan="5" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ── SECTION 2: Monthly Summary ── -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><div class="card-title-icon blue">📊</div>Monthly Report</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="month" class="form-control" id="reportMonth" style="width:160px;padding:6px 10px">
-            <button class="btn btn-secondary btn-sm" onclick="renderMonthlyReport()">Go</button>
-          </div>
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Department</th>
-                <th>Days Present</th>
-                <th>Avg Check-In</th>
-                <th>Avg Check-Out</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody id="monthlyReportBody">
-              <tr><td colspan="6" class="loading-rows">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════
-         TAB: EMPLOYEE DETAIL
-         ══════════════════════════════ -->
-    <div class="admin-tab-content" id="tab-emp-detail">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <button class="btn btn-ghost btn-sm" onclick="switchAdminTab('tab-overview','loadOverview','Overview')" style="margin-bottom:8px">← Back</button>
-          <h1 class="page-title" id="detailEmpName">Employee Detail</h1>
-          <p class="page-subtitle" id="detailEmpInfo">—</p>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="month" class="form-control" id="detailMonth" style="width:160px;padding:6px 10px">
-          <button class="btn btn-secondary btn-sm" onclick="renderEmpDetail()">Go</button>
-        </div>
-      </div>
-
-      <!-- Summary cards -->
-      <div class="stats-grid" style="margin-bottom:20px">
-        <div class="stat-card green">
-          <div class="stat-info">
-            <div class="stat-label">Days Present</div>
-            <div class="stat-value" id="detailDaysPresent">—</div>
-          </div>
-          <div class="stat-icon green">✅</div>
-        </div>
-        <div class="stat-card blue">
-          <div class="stat-info">
-            <div class="stat-label">Avg Check-In</div>
-            <div class="stat-value" id="detailAvgIn" style="font-size:20px">—</div>
-          </div>
-          <div class="stat-icon blue">🕐</div>
-        </div>
-        <div class="stat-card gold">
-          <div class="stat-info">
-            <div class="stat-label">Avg Check-Out</div>
-            <div class="stat-value" id="detailAvgOut" style="font-size:20px">—</div>
-          </div>
-          <div class="stat-icon gold">🕔</div>
-        </div>
-        <div class="stat-card rose">
-          <div class="stat-info">
-            <div class="stat-label">Days Absent</div>
-            <div class="stat-value" id="detailDaysAbsent">—</div>
-          </div>
-          <div class="stat-icon rose">❌</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><div class="card-title-icon blue">📋</div>Daily Records</div>
-        </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr><th>Date</th><th>Day</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Status</th></tr>
-            </thead>
-            <tbody id="detailTableBody">
-              <tr><td colspan="6" class="loading-rows">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════
-         TAB: EMPLOYEES
-         ══════════════════════════════ -->
-    <div class="admin-tab-content" id="tab-employees">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <h1 class="page-title">Employee Management</h1>
-          <p class="page-subtitle">Add, edit and manage your workforce</p>
-        </div>
-        <button class="btn btn-primary" onclick="openAddEmployee()">➕ Add Employee</button>
-      </div>
-
-      <div class="filter-bar">
-        <div class="search-wrap" style="flex:1">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="form-control search-input" id="empSearch" placeholder="Search employees...">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="loadEmployees()">🔄 Refresh</button>
-      </div>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Department</th>
-              <th>Position</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Hire Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="empTableBody">
-            <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════
-         TAB: ATTENDANCE
-         ══════════════════════════════ -->
-    <div class="admin-tab-content" id="tab-attendance">
-      <div class="page-header">
-        <h1 class="page-title">Attendance Records</h1>
-        <p class="page-subtitle">Track employee check-in and check-out history</p>
-      </div>
-
-      <div class="filter-bar">
-        <input type="text" class="form-control" id="attEmpFilter" placeholder="Filter by employee ID or name...">
-        <input type="date"  class="form-control" id="attDateFilter">
-        <button class="btn btn-secondary btn-sm" onclick="loadAttendance()">🔄 Refresh</button>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('attEmpFilter').value='';document.getElementById('attDateFilter').value='';filterAttendance()">✕ Clear</button>
-      </div>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Employee ID</th>
-              <th>Name</th>
-              <th>Date</th>
-              <th>Check-In</th>
-              <th>Check-Out</th>
-            </tr>
-          </thead>
-          <tbody id="attTableBody">
-            <tr><td colspan="5" class="loading-rows">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════
-         TAB: SALARY
-         ══════════════════════════════ -->
-    <div class="admin-tab-content" id="tab-salary">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <h1 class="page-title">Salary, Bonuses & Deductions</h1>
-          <p class="page-subtitle">Manage compensation records for all employees</p>
-        </div>
-        <button class="btn btn-primary" onclick="openAddSalary()">➕ Add Record</button>
-      </div>
-
-      <div class="filter-bar">
-        <select class="form-control" id="salEmpFilter">
-          <option value="">All Employees</option>
-        </select>
-        <button class="btn btn-secondary btn-sm" onclick="loadSalary()">🔄 Refresh</button>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('salEmpFilter').value='';filterSalary()">✕ Clear</button>
-      </div>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Emp. ID</th>
-              <th>Name</th>
-              <th>Bonus</th>
-              <th>Deduction</th>
-              <th>Notes</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="salTableBody">
-            <tr><td colspan="7" class="loading-rows">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════
-         TAB: ANNOUNCEMENTS
-         ══════════════════════════════ -->
-    <div class="admin-tab-content" id="tab-announcements">
-      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
-        <div>
-          <h1 class="page-title">Announcements</h1>
-          <p class="page-subtitle">Publish company-wide notices and updates</p>
-        </div>
-        <button class="btn btn-primary" onclick="openAddAnnouncement()">➕ New Announcement</button>
-      </div>
-
-      <div class="filter-bar">
-        <div class="search-wrap" style="flex:1">
-          <span class="search-icon">🔍</span>
-          <input type="text" class="form-control search-input" id="annSearch" placeholder="Search announcements...">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 Refresh</button>
-      </div>
-
-      <div id="annList">
-        <div class="loading-rows">Loading...</div>
-      </div>
-    </div>
-
-  </main><!-- /page-content -->
-</div><!-- /main-content -->
-
-<!-- ═══════════════════════════════════════
-     MODALS
-     ═══════════════════════════════════════ -->
-
-<!-- Employee Modal -->
-<div class="modal-overlay" id="empModal" style="display:none">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <div class="modal-title" id="empModalTitle">Add New Employee</div>
-      <button class="modal-close" onclick="closeModal('empModal')">×</button>
-    </div>
-    <form id="empForm" onsubmit="return false">
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Employee ID *</label>
-          <input type="text" class="form-control" id="empId" placeholder="e.g. EMP001" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Full Name *</label>
-          <input type="text" class="form-control" id="empName" placeholder="Full name" required>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Department *</label>
-          <input type="text" class="form-control" id="empDepartment" placeholder="e.g. Engineering" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Position</label>
-          <input type="text" class="form-control" id="empPosition" placeholder="e.g. Senior Developer">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Phone</label>
-          <input type="tel" class="form-control" id="empPhone" placeholder="+1 234 567 8900">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" id="empEmail" placeholder="email@company.com">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Hire Date</label>
-          <input type="date" class="form-control" id="empHireDate">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Password *</label>
-          <input type="password" class="form-control" id="empPassword" placeholder="Set login password" required>
-        </div>
-      </div>
-    </form>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('empModal')">Cancel</button>
-      <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee()">Save Employee</button>
-    </div>
-  </div>
-</div>
-
-<!-- Announcement Modal -->
-<div class="modal-overlay" id="annModal" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="annModalTitle">New Announcement</div>
-      <button class="modal-close" onclick="closeModal('annModal')">×</button>
-    </div>
-    <form id="annForm" onsubmit="return false">
-      <div class="form-group">
-        <label class="form-label">Title *</label>
-        <input type="text" class="form-control" id="annTitle" placeholder="Announcement title" required>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Message *</label>
-        <textarea class="form-control" id="annMessage" rows="5" placeholder="Write your announcement..." required></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-control" id="annDate">
-      </div>
-    </form>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('annModal')">Cancel</button>
-      <button class="btn btn-primary" id="annSaveBtn" onclick="saveAnnouncement()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- Salary Modal -->
-<div class="modal-overlay" id="salModal" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="salModalTitle">Add Bonus / Deduction</div>
-      <button class="modal-close" onclick="closeModal('salModal')">×</button>
-    </div>
-    <form id="salForm" onsubmit="return false">
-      <div class="form-group">
-        <label class="form-label">Employee *</label>
-        <select class="form-control" id="salEmployeeId" required>
-          <option value="">Select Employee</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Bonus Amount</label>
-          <input type="number" class="form-control" id="salBonus" placeholder="0.00" min="0" step="0.01" value="0">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Deduction Amount</label>
-          <input type="number" class="form-control" id="salDeduction" placeholder="0.00" min="0" step="0.01" value="0">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notes</label>
-        <textarea class="form-control" id="salNotes" rows="3" placeholder="Reason or additional notes..."></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Date</label>
-        <input type="date" class="form-control" id="salDate">
-      </div>
-    </form>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('salModal')">Cancel</button>
-      <button class="btn btn-primary" id="salSaveBtn" onclick="saveSalary()">Save</button>
-    </div>
-  </div>
-</div>
-
-<script src="assets/script.js"></script>
-<script src="assets/admin.js"></script>
-<script>
 /**
- * Helper to switch admin tab from quick-action buttons or external calls
+ * HR NEXUS — admin.js
+ * Admin Dashboard Logic
+ * Handles: Employees, Attendance, Announcements, Salary, Reports
  */
-function switchAdminTab(tabId, loadFn, title) {
-  // Update active sidebar item
-  document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
-  // Update topbar title
-  document.getElementById('topbarTitleEl').textContent = title || 'Dashboard';
-  // Show tab
-  showAdminTab(tabId, loadFn);
+
+/* ══════════════════════════════════════════════
+   ▌ STATE
+   ══════════════════════════════════════════════ */
+const AdminState = {
+  employees:     [],
+  attendance:    [],
+  announcements: [],
+  salary:        [],
+  editTarget:    null,
+  currentDetailEmp: null  // employee being viewed in detail tab
+};
+
+/* ══════════════════════════════════════════════
+   ▌ INIT
+   ══════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async () => {
+  // Guard: admin only
+  const user = requireAuth(true);
+  if (!user) return;
+
+  // Load initial tab (overview)
+  showAdminTab('tab-overview', null);
+  await loadOverview();
+
+  // Tab navigation
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId   = btn.dataset.tab;
+      const loadFn  = btn.dataset.load;
+      showAdminTab(tabId, loadFn);
+
+      // Update sidebar active
+      document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Search / filter listeners
+  document.getElementById('empSearch')?.addEventListener('input', debounce(filterEmployees, 300));
+  document.getElementById('attEmpFilter')?.addEventListener('change', filterAttendance);
+  document.getElementById('attDateFilter')?.addEventListener('change', filterAttendance);
+  document.getElementById('annSearch')?.addEventListener('input', debounce(filterAnnouncements, 300));
+  document.getElementById('salEmpFilter')?.addEventListener('change', filterSalary);
+});
+
+/* ══════════════════════════════════════════════
+   ▌ TAB SYSTEM
+   ══════════════════════════════════════════════ */
+function showAdminTab(tabId, loadFn) {
+  document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
+  const el = document.getElementById(tabId);
+  if (el) el.classList.add('active');
+
+  // Load data for the tab
+  if (loadFn) {
+    const loaders = {
+      loadEmployees,
+      loadAttendance,
+      loadAnnouncements,
+      loadSalary,
+      loadReports,
+      loadOverview,
+      populateSalaryEmployeeFilter
+    };
+    if (loaders[loadFn]) loaders[loadFn]();
+  }
 }
 
-// Update topbar title on tab switch
-document.querySelectorAll('[data-tab]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const titles = {
-      'tab-overview':      'Overview',
-      'tab-employees':     'Employees',
-      'tab-attendance':    'Attendance',
-      'tab-salary':        'Salary & Bonuses',
-      'tab-announcements': 'Announcements',
-      'tab-emp-detail':    'Employee Detail'
-    };
-    document.getElementById('topbarTitleEl').textContent = titles[btn.dataset.tab] || 'Dashboard';
+/* ══════════════════════════════════════════════
+   ▌ REPORTS / OVERVIEW
+   ══════════════════════════════════════════════ */
+
+// ── Helper: parse any date value to yyyy-MM-dd ──
+function normDate(val) {
+  if (!val) return '';
+  const s = String(val);
+  const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  const d = new Date(s);
+  if (!isNaN(d) && d.getFullYear() > 1970) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+  }
+  return '';
+}
+
+// ── Helper: parse time string or Date-based time ──
+function normTime(val) {
+  if (!val) return '';
+  const s = String(val);
+  const t = s.match(/(\d{2}:\d{2}:\d{2})/);
+  if (t) return t[1];
+  const d = new Date(s);
+  if (!isNaN(d)) {
+    return String(d.getHours()).padStart(2,'0') + ':' +
+           String(d.getMinutes()).padStart(2,'0') + ':' +
+           String(d.getSeconds()).padStart(2,'0');
+  }
+  return s;
+}
+
+// ── Helper: time string to minutes since midnight ──
+function timeToMins(t) {
+  if (!t) return null;
+  const p = t.split(':');
+  if (p.length < 2) return null;
+  return parseInt(p[0])*60 + parseInt(p[1]);
+}
+
+// ── Helper: minutes to HH:mm ──
+function minsToTime(m) {
+  if (m === null || m === undefined) return '—';
+  return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+}
+
+// ── Helper: duration between two HH:mm:ss strings ──
+function calcDuration(checkIn, checkOut) {
+  const a = timeToMins(checkIn), b = timeToMins(checkOut);
+  if (a === null || b === null || b <= a) return '—';
+  const diff = b - a;
+  return `${Math.floor(diff/60)}h ${diff%60}m`;
+}
+
+async function loadOverview() {
+  // Set current month default
+  const now = new Date();
+  const monthVal = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const reportMonthEl = document.getElementById('reportMonth');
+  if (reportMonthEl && !reportMonthEl.value) reportMonthEl.value = monthVal;
+
+  try {
+    // Fetch employees and all attendance in parallel
+    const [empRes, attRes] = await Promise.all([API.getEmployees(), API.getAttendance({})]);
+    if (!empRes.success) throw new Error(empRes.message);
+    if (!attRes.success) throw new Error(attRes.message);
+
+    AdminState.employees  = empRes.data || [];
+    // Normalize attendance records
+    AdminState.attendance = (attRes.data || []).map(r => ({
+      employeeId: String(r.employeeId || r.EmployeeID || '').trim(),
+      name:       String(r.name || r.Name || '').trim(),
+      date:       normDate(r.date || r.Date || ''),
+      checkIn:    normTime(r.checkIn || r.CheckIn || ''),
+      checkOut:   normTime(r.checkOut || r.CheckOut || '')
+    }));
+
+    populateSalaryEmployeeFilter();
+    renderTodayAttendance();
+    renderMonthlyReport();
+  } catch (e) {
+    console.error('loadOverview:', e);
+    Toast.error('Failed to load overview', e.message);
+  }
+}
+
+function renderTodayAttendance() {
+  // Use local date (not UTC) to match server timezone
+  const _now = new Date();
+  const today = _now.getFullYear() + '-' +
+    String(_now.getMonth()+1).padStart(2,'0') + '-' +
+    String(_now.getDate()).padStart(2,'0');
+  const tbody = document.getElementById('todayAttBody');
+  if (!tbody) return;
+
+  const todayAtt = AdminState.attendance.filter(r => r.date === today);
+  const attendedIds = new Set(todayAtt.map(r => r.employeeId.toLowerCase()));
+
+  let present = 0, absent = 0;
+  const rows = AdminState.employees
+    .filter(e => e.role !== 'admin')
+    .map(emp => {
+      const rec = todayAtt.find(r => r.employeeId.toLowerCase() === emp.id.toLowerCase()
+        || r.name.toLowerCase() === emp.name.toLowerCase());
+      if (rec) present++; else absent++;
+      const hasIn  = rec && rec.checkIn;
+      const hasOut = rec && rec.checkOut;
+      const status = !rec
+        ? '<span class="badge badge-muted">Absent</span>'
+        : hasOut
+          ? '<span class="badge badge-blue">Complete</span>'
+          : '<span class="badge badge-gold">In Progress</span>';
+      return `<tr style="cursor:pointer" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
+        <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
+        <td><span class="badge badge-blue">${escapeHtml(emp.department || '—')}</span></td>
+        <td><span class="badge badge-green">${hasIn  ? rec.checkIn  : '—'}</span></td>
+        <td><span class="badge ${hasOut ? 'badge-blue' : 'badge-muted'}">${hasOut ? rec.checkOut : '—'}</span></td>
+        <td>${status}</td>
+      </tr>`;
+    });
+
+  setEl('todayPresentBadge', `${present} Present`);
+  setEl('todayAbsentBadge',  `${absent} Absent`);
+  tbody.innerHTML = rows.length ? rows.join('') :
+    `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No employees found</div></div></td></tr>`;
+}
+
+function renderMonthlyReport() {
+  const monthVal = document.getElementById('reportMonth')?.value;
+  if (!monthVal) return;
+  const [year, month] = monthVal.split('-').map(Number);
+  const tbody = document.getElementById('monthlyReportBody');
+  if (!tbody) return;
+
+  // Working days in the month (Mon–Fri)
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let workDays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const day = new Date(year, month-1, d).getDay();
+    if (day !== 5) workDays++; // Only Friday is weekend
+  }
+
+  const rows = AdminState.employees
+    .filter(e => e.role !== 'admin')
+    .map(emp => {
+      const recs = AdminState.attendance.filter(r => {
+        const d = r.date;
+        if (!d) return false;
+        const [y,m] = d.split('-').map(Number);
+        const empMatch = r.employeeId.toLowerCase() === emp.id.toLowerCase()
+          || r.name.toLowerCase() === emp.name.toLowerCase();
+        return empMatch && y === year && m === month;
+      });
+
+      const daysPresent = recs.length;
+      const inMins  = recs.map(r => timeToMins(r.checkIn)).filter(v => v !== null);
+      const outMins = recs.map(r => timeToMins(r.checkOut)).filter(v => v !== null);
+      const avgIn  = inMins.length  ? Math.round(inMins.reduce((a,b)=>a+b,0)  / inMins.length)  : null;
+      const avgOut = outMins.length ? Math.round(outMins.reduce((a,b)=>a+b,0) / outMins.length) : null;
+
+      return `<tr style="cursor:pointer" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
+        <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
+        <td><span class="badge badge-blue">${escapeHtml(emp.department||'—')}</span></td>
+        <td><span class="badge ${daysPresent>0?'badge-green':'badge-muted'}">${daysPresent} / ${workDays} days</span></td>
+        <td>${avgIn  !== null ? minsToTime(avgIn)  : '—'}</td>
+        <td>${avgOut !== null ? minsToTime(avgOut) : '—'}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEmpDetail('${escapeHtml(emp.id)}')">🔍 View</button></td>
+      </tr>`;
+    });
+
+  tbody.innerHTML = rows.length ? rows.join('') :
+    `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No data</div></div></td></tr>`;
+}
+
+function openEmpDetail(empId) {
+  const emp = AdminState.employees.find(e => e.id === empId);
+  if (!emp) return;
+  AdminState.currentDetailEmp = emp;
+
+  // Set current month
+  const now = new Date();
+  const monthVal = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const detailMonthEl = document.getElementById('detailMonth');
+  if (detailMonthEl) detailMonthEl.value = monthVal;
+
+  setEl('detailEmpName', escapeHtml(emp.name));
+  setEl('detailEmpInfo', `${escapeHtml(emp.department||'—')} • ${escapeHtml(emp.position||'—')} • ID: ${escapeHtml(emp.id)}`);
+
+  switchAdminTab('tab-emp-detail', null, emp.name);
+  renderEmpDetail();
+}
+
+function renderEmpDetail() {
+  const emp = AdminState.currentDetailEmp;
+  if (!emp) return;
+
+  const monthVal = document.getElementById('detailMonth')?.value;
+  if (!monthVal) return;
+  const [year, month] = monthVal.split('-').map(Number);
+
+  // Get all records for this employee this month
+  const recs = AdminState.attendance.filter(r => {
+    if (!r.date) return false;
+    const [y,m] = r.date.split('-').map(Number);
+    return (r.employeeId.toLowerCase() === emp.id.toLowerCase()
+      || r.name.toLowerCase() === emp.name.toLowerCase())
+      && y === year && m === month;
   });
-});
-</script>
-</body>
-</html>
+
+  // Build full calendar for the month
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let daysPresent = 0, daysAbsent = 0;
+  const inMins = [], outMins = [];
+  const detailRows = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(year, month-1, d).getDay();
+    const dayName = dayNames[dow];
+    const isWeekend = dow === 5; // Only Friday is weekend
+    const rec = recs.find(r => r.date === dateStr);
+
+    if (rec) {
+      daysPresent++;
+      if (timeToMins(rec.checkIn)  !== null) inMins.push(timeToMins(rec.checkIn));
+      if (timeToMins(rec.checkOut) !== null) outMins.push(timeToMins(rec.checkOut));
+    } else if (!isWeekend) {
+      // Only count weekday absences
+      const isPast = new Date(dateStr) < new Date(new Date().toDateString());
+      if (isPast) daysAbsent++;
+    }
+
+    const status = rec
+      ? (rec.checkOut ? '<span class="badge badge-green">Complete</span>'
+                      : '<span class="badge badge-gold">In Progress</span>')
+      : isWeekend
+        ? '<span class="badge badge-muted">Weekend</span>'
+        : new Date(dateStr) > new Date(new Date().toDateString())
+          ? '<span class="badge badge-muted">Upcoming</span>'
+          : '<span class="badge badge-muted">Absent</span>';
+
+    const rowStyle = isWeekend ? 'opacity:0.4' : '';
+    detailRows.push(`<tr style="${rowStyle}">
+      <td class="bold">${dateStr}</td>
+      <td>${dayName}</td>
+      <td><span class="badge badge-green">${rec?.checkIn  || '—'}</span></td>
+      <td><span class="badge badge-blue">${rec?.checkOut || '—'}</span></td>
+      <td>${rec ? calcDuration(rec.checkIn, rec.checkOut) : '—'}</td>
+      <td>${status}</td>
+    </tr>`);
+  }
+
+  const avgIn  = inMins.length  ? Math.round(inMins.reduce((a,b)=>a+b,0)  / inMins.length)  : null;
+  const avgOut = outMins.length ? Math.round(outMins.reduce((a,b)=>a+b,0) / outMins.length) : null;
+
+  setEl('detailDaysPresent', daysPresent);
+  setEl('detailDaysAbsent',  daysAbsent);
+  setEl('detailAvgIn',  avgIn  !== null ? minsToTime(avgIn)  : '—');
+  setEl('detailAvgOut', avgOut !== null ? minsToTime(avgOut) : '—');
+  setEl('detailTableBody', detailRows.join(''));
+}
+
+async function loadReports() {
+  // Legacy — redirect to loadOverview
+  await loadOverview();
+}
+
+/* ══════════════════════════════════════════════
+   ▌ EMPLOYEES — CRUD
+   ══════════════════════════════════════════════ */
+async function loadEmployees() {
+  setEl('empTableBody', `<tr><td colspan="8" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading employees...</td></tr>`);
+  try {
+    const res = await API.getEmployees();
+    if (res.success) {
+      AdminState.employees = res.data || [];
+      renderEmployeeTable(AdminState.employees);
+      populateSalaryEmployeeFilter();
+    } else {
+      throw new Error(res.message);
+    }
+  } catch (e) {
+    console.error('loadEmployees:', e);
+    setEl('empTableBody', `<tr><td colspan="8" class="loading-rows text-red">Failed to load employees</td></tr>`);
+    Toast.error('Load Failed', e.message);
+  }
+}
+
+function renderEmployeeTable(data) {
+  if (!data.length) {
+    setEl('empTableBody', `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No employees found</div></div></td></tr>`);
+    return;
+  }
+  setEl('empTableBody', data.map(emp => `
+    <tr>
+      <td class="bold">${escapeHtml(emp.id)}</td>
+      <td class="bold">${escapeHtml(emp.name)}</td>
+      <td><span class="badge badge-blue">${escapeHtml(emp.department)}</span></td>
+      <td>${escapeHtml(emp.position)}</td>
+      <td>${escapeHtml(emp.phone || '—')}</td>
+      <td>${escapeHtml(emp.email || '—')}</td>
+      <td>${formatDate(emp.hireDate)}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="openEditEmployee('${escapeHtml(emp.id)}')" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteEmployee('${escapeHtml(emp.id)}')" title="Delete">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join(''));
+}
+
+function filterEmployees() {
+  const q = document.getElementById('empSearch')?.value.toLowerCase() || '';
+  const filtered = AdminState.employees.filter(e =>
+    e.id?.toLowerCase().includes(q) ||
+    e.name?.toLowerCase().includes(q) ||
+    e.department?.toLowerCase().includes(q) ||
+    e.position?.toLowerCase().includes(q)
+  );
+  renderEmployeeTable(filtered);
+}
+
+// Open ADD modal
+function openAddEmployee() {
+  AdminState.editTarget = null;
+  document.getElementById('empModalTitle').textContent = 'Add New Employee';
+  document.getElementById('empForm').reset();
+  document.getElementById('empId').readOnly = false;
+  openModal('empModal');
+}
+
+// Open EDIT modal
+function openEditEmployee(id) {
+  const emp = AdminState.employees.find(e => e.id === id);
+  if (!emp) return;
+  AdminState.editTarget = emp;
+  document.getElementById('empModalTitle').textContent = 'Edit Employee';
+  document.getElementById('empId').value         = emp.id;
+  document.getElementById('empId').readOnly       = true;
+  document.getElementById('empName').value        = emp.name;
+  document.getElementById('empDepartment').value  = emp.department;
+  document.getElementById('empPosition').value    = emp.position;
+  document.getElementById('empPhone').value       = emp.phone;
+  document.getElementById('empEmail').value       = emp.email;
+  document.getElementById('empHireDate').value    = emp.hireDate;
+  document.getElementById('empPassword').value    = emp.password || '';
+  openModal('empModal');
+}
+
+// SAVE employee (add or edit)
+async function saveEmployee() {
+  const data = {
+    id:         document.getElementById('empId').value.trim(),
+    name:       document.getElementById('empName').value.trim(),
+    department: document.getElementById('empDepartment').value.trim(),
+    position:   document.getElementById('empPosition').value.trim(),
+    phone:      document.getElementById('empPhone').value.trim(),
+    email:      document.getElementById('empEmail').value.trim(),
+    hireDate:   document.getElementById('empHireDate').value,
+    password:   document.getElementById('empPassword').value.trim()
+  };
+
+  if (!data.id || !data.name || !data.department) {
+    Toast.warning('Validation', 'ID, Name, and Department are required.');
+    return;
+  }
+
+  const saveBtn = document.getElementById('empSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<span class="spinner spinner-sm"></span> Saving...';
+
+  try {
+    const isEdit = !!AdminState.editTarget;
+    const res = isEdit ? await API.updateEmployee(data) : await API.addEmployee(data);
+    if (res.success) {
+      Toast.success(isEdit ? 'Employee Updated' : 'Employee Added', `${data.name} has been saved.`);
+      closeModal('empModal');
+      loadEmployees();
+    } else {
+      throw new Error(res.message);
+    }
+  } catch (e) {
+    Toast.error('Save Failed', e.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = 'Save Employee';
+  }
+}
+
+// DELETE employee
+async function deleteEmployee(id) {
+  const emp = AdminState.employees.find(e => e.id === id);
+  if (!confirm(`Delete employee "${emp?.name || id}"? This cannot be undone.`)) return;
+
+  try {
+    Loader.show('Deleting...');
+    const res = await API.deleteEmployee(id);
+    if (res.success) {
+      Toast.success('Employee Deleted', `${emp?.name} has been removed.`);
+      loadEmployees();
+    } else {
+      throw new Error(res.message);
+    }
+  } catch (e) {
+    Toast.error('Delete Failed', e.message);
+  } finally {
+    Loader.hide();
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ▌ ATTENDANCE
+   ══════════════════════════════════════════════ */
+async function loadAttendance() {
+  setEl('attTableBody', `<tr><td colspan="5" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading attendance...</td></tr>`);
+  try {
+    const res = await API.getAttendance();
+    if (res.success) {
+      AdminState.attendance = res.data || [];
+      renderAttendanceTable(AdminState.attendance);
+    } else throw new Error(res.message);
+  } catch (e) {
+    setEl('attTableBody', `<tr><td colspan="5" class="loading-rows text-red">Failed to load</td></tr>`);
+    Toast.error('Load Failed', e.message);
+  }
+}
+
+function renderAttendanceTable(data) {
+  if (!data.length) {
+    setEl('attTableBody', `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No attendance records</div></div></td></tr>`);
+    return;
+  }
+
+  // Sort newest first
+  const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+  setEl('attTableBody', sorted.map(r => {
+    const hasCheckout = r.checkOut && r.checkOut !== '—';
+    return `
+      <tr>
+        <td class="bold">${escapeHtml(r.employeeId)}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${formatDate(r.date)}</td>
+        <td><span class="badge badge-green">${escapeHtml(r.checkIn || '—')}</span></td>
+        <td>${hasCheckout ? `<span class="badge badge-blue">${escapeHtml(r.checkOut)}</span>` : '<span class="badge badge-muted">Pending</span>'}</td>
+      </tr>
+    `;
+  }).join(''));
+}
+
+function filterAttendance() {
+  const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
+  const date  = document.getElementById('attDateFilter')?.value || '';
+  const filtered = AdminState.attendance.filter(r => {
+    const matchEmp  = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
+    const matchDate = !date  || r.date === date;
+    return matchEmp && matchDate;
+  });
+  renderAttendanceTable(filtered);
+}
+
+/* ══════════════════════════════════════════════
+   ▌ ANNOUNCEMENTS — CRUD
+   ══════════════════════════════════════════════ */
+async function loadAnnouncements() {
+  setEl('annList', `<div class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div> Loading...</div>`);
+  try {
+    const res = await API.getAnnouncements();
+    if (res.success) {
+      AdminState.announcements = res.data || [];
+      renderAnnouncementList(AdminState.announcements);
+    } else throw new Error(res.message);
+  } catch (e) {
+    setEl('annList', `<div class="loading-rows text-red">Failed to load announcements</div>`);
+    Toast.error('Load Failed', e.message);
+  }
+}
+
+function renderAnnouncementList(data) {
+  if (!data.length) {
+    setEl('annList', `<div class="empty-state"><div class="empty-icon">📢</div><div class="empty-title">No announcements yet</div></div>`);
+    return;
+  }
+  const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+  setEl('annList', sorted.map(ann => `
+    <div class="announcement-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div>
+          <div class="announcement-title">${escapeHtml(ann.title)}</div>
+          <div class="announcement-body">${escapeHtml(ann.message)}</div>
+          <div class="announcement-meta">📅 ${formatDate(ann.date)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="openEditAnnouncement('${escapeHtml(ann.id || ann.title)}')" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteAnnouncement('${escapeHtml(ann.id || ann.title)}')" title="Delete">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join(''));
+}
+
+function filterAnnouncements() {
+  const q = document.getElementById('annSearch')?.value.toLowerCase() || '';
+  const filtered = AdminState.announcements.filter(a =>
+    a.title?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q)
+  );
+  renderAnnouncementList(filtered);
+}
+
+function openAddAnnouncement() {
+  AdminState.editTarget = null;
+  document.getElementById('annModalTitle').textContent = 'New Announcement';
+  document.getElementById('annForm').reset();
+  document.getElementById('annDate').value = new Date().toISOString().split('T')[0];
+  openModal('annModal');
+}
+
+function openEditAnnouncement(id) {
+  const ann = AdminState.announcements.find(a => (a.id || a.title) === id);
+  if (!ann) return;
+  AdminState.editTarget = ann;
+  document.getElementById('annModalTitle').textContent = 'Edit Announcement';
+  document.getElementById('annTitle').value   = ann.title;
+  document.getElementById('annMessage').value = ann.message;
+  document.getElementById('annDate').value    = ann.date;
+  openModal('annModal');
+}
+
+async function saveAnnouncement() {
+  const data = {
+    id:      AdminState.editTarget?.id || null,
+    title:   document.getElementById('annTitle').value.trim(),
+    message: document.getElementById('annMessage').value.trim(),
+    date:    document.getElementById('annDate').value
+  };
+
+  if (!data.title || !data.message) {
+    Toast.warning('Validation', 'Title and message are required.');
+    return;
+  }
+
+  const btn = document.getElementById('annSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> Saving...';
+
+  try {
+    const isEdit = !!AdminState.editTarget;
+    const res = isEdit ? await API.updateAnnouncement(data) : await API.addAnnouncement(data);
+    if (res.success) {
+      Toast.success(isEdit ? 'Announcement Updated' : 'Announcement Added');
+      closeModal('annModal');
+      loadAnnouncements();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Save Failed', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Save';
+  }
+}
+
+async function deleteAnnouncement(id) {
+  if (!confirm('Delete this announcement?')) return;
+  try {
+    Loader.show('Deleting...');
+    const res = await API.deleteAnnouncement(id);
+    if (res.success) { Toast.success('Deleted'); loadAnnouncements(); }
+    else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Delete Failed', e.message);
+  } finally {
+    Loader.hide();
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ▌ SALARY / BONUSES & DEDUCTIONS — CRUD
+   ══════════════════════════════════════════════ */
+async function loadSalary() {
+  setEl('salTableBody', `<tr><td colspan="7" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>`);
+  try {
+    const res = await API.getSalary();
+    if (res.success) {
+      AdminState.salary = res.data || [];
+      renderSalaryTable(AdminState.salary);
+    } else throw new Error(res.message);
+  } catch (e) {
+    setEl('salTableBody', `<tr><td colspan="7" class="loading-rows text-red">Failed to load</td></tr>`);
+    Toast.error('Load Failed', e.message);
+  }
+}
+
+function renderSalaryTable(data) {
+  if (!data.length) {
+    setEl('salTableBody', `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">No salary records</div></div></td></tr>`);
+    return;
+  }
+  const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+  setEl('salTableBody', sorted.map(r => `
+    <tr>
+      <td class="bold">${escapeHtml(r.employeeId)}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td class="text-green font-bold">+${formatCurrency(r.bonus)}</td>
+      <td class="text-red font-bold">-${formatCurrency(r.deduction)}</td>
+      <td>${escapeHtml(r.notes || '—')}</td>
+      <td>${formatDate(r.date)}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="openEditSalary('${escapeHtml(r.id)}')" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteSalary('${escapeHtml(r.id)}')" title="Delete">🗑️</button>
+        </div>
+      </td>
+    </tr>
+  `).join(''));
+}
+
+function filterSalary() {
+  const empId = document.getElementById('salEmpFilter')?.value.toLowerCase() || '';
+  const filtered = !empId ? AdminState.salary
+    : AdminState.salary.filter(r => r.employeeId?.toLowerCase() === empId || r.name?.toLowerCase().includes(empId));
+  renderSalaryTable(filtered);
+}
+
+function populateSalaryEmployeeFilter() {
+  const sel = document.getElementById('salEmpFilter');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Employees</option>' +
+    AdminState.employees.map(e =>
+      `<option value="${escapeHtml(e.id.toLowerCase())}">${escapeHtml(e.name)} (${escapeHtml(e.id)})</option>`
+    ).join('');
+  sel.value = current;
+
+  // Also populate salary form employee select
+  const formSel = document.getElementById('salEmployeeId');
+  if (formSel) {
+    formSel.innerHTML = '<option value="">Select Employee</option>' +
+      AdminState.employees.map(e =>
+        `<option value="${escapeHtml(e.id)}">${escapeHtml(e.name)} — ${escapeHtml(e.id)}</option>`
+      ).join('');
+  }
+}
+
+function openAddSalary() {
+  AdminState.editTarget = null;
+  document.getElementById('salModalTitle').textContent = 'Add Bonus / Deduction';
+  document.getElementById('salForm').reset();
+  document.getElementById('salDate').value = new Date().toISOString().split('T')[0];
+  openModal('salModal');
+}
+
+function openEditSalary(id) {
+  const r = AdminState.salary.find(s => s.id == id);
+  if (!r) return;
+  AdminState.editTarget = r;
+  document.getElementById('salModalTitle').textContent = 'Edit Record';
+  document.getElementById('salEmployeeId').value = r.employeeId;
+  document.getElementById('salBonus').value      = r.bonus;
+  document.getElementById('salDeduction').value  = r.deduction;
+  document.getElementById('salNotes').value      = r.notes;
+  document.getElementById('salDate').value       = r.date;
+  openModal('salModal');
+}
+
+async function saveSalary() {
+  const employeeSelect = document.getElementById('salEmployeeId');
+  const selectedId = employeeSelect?.value;
+  const selectedEmp = AdminState.employees.find(e => e.id === selectedId);
+
+  const data = {
+    id:          AdminState.editTarget?.id || null,
+    employeeId:  selectedId,
+    name:        selectedEmp?.name || '',
+    bonus:       parseFloat(document.getElementById('salBonus').value) || 0,
+    deduction:   parseFloat(document.getElementById('salDeduction').value) || 0,
+    notes:       document.getElementById('salNotes').value.trim(),
+    date:        document.getElementById('salDate').value
+  };
+
+  if (!data.employeeId) {
+    Toast.warning('Validation', 'Please select an employee.');
+    return;
+  }
+
+  const btn = document.getElementById('salSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> Saving...';
+
+  try {
+    const isEdit = !!AdminState.editTarget;
+    const res = isEdit ? await API.updateSalaryRecord(data) : await API.addSalaryRecord(data);
+    if (res.success) {
+      Toast.success(isEdit ? 'Record Updated' : 'Record Added');
+      closeModal('salModal');
+      loadSalary();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Save Failed', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Save';
+  }
+}
+
+async function deleteSalary(id) {
+  if (!confirm('Delete this salary record?')) return;
+  try {
+    Loader.show('Deleting...');
+    const res = await API.deleteSalaryRecord(id);
+    if (res.success) { Toast.success('Deleted'); loadSalary(); }
+    else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Delete Failed', e.message);
+  } finally {
+    Loader.hide();
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ▌ UTIL — Set inner HTML by element ID
+   ══════════════════════════════════════════════ */
+function setEl(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
