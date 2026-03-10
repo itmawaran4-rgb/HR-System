@@ -185,32 +185,64 @@ async function loadAttendanceHistory() {
   document.getElementById('attHistoryBody').innerHTML =
     `<tr><td colspan="4" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>بارکراوە...</td></tr>`;
   try {
-    // Fetch ALL attendance records — filter client-side to avoid ID mismatch issues
+    // Fetch ALL attendance records
     const res = await API.getAttendance({});
     if (!res.success) throw new Error(res.message);
 
-    // Normalize all field name variations from Google Sheets
+    // ── Helper: extract yyyy-MM-dd from any date string ──
+    function parseDate(val) {
+      if (!val) return '';
+      const s = String(val);
+      // Already yyyy-MM-dd
+      const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (iso) return iso[1];
+      // Long Google Sheets date string e.g. "Tue Mar 10 2026 00:00:00 GMT+0300"
+      const d = new Date(s);
+      if (!isNaN(d)) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const day = String(d.getDate()).padStart(2,'0');
+        // Fix 1899 ghost dates — return empty
+        if (y < 1970) return '';
+        return `${y}-${m}-${day}`;
+      }
+      return s.substring(0,10);
+    }
+
+    // ── Helper: extract HH:mm:ss from any time/date string ──
+    function parseTime(val) {
+      if (!val) return '';
+      const s = String(val);
+      // Already HH:mm:ss
+      const t = s.match(/(\d{2}:\d{2}:\d{2})/);
+      if (t) return t[1];
+      // Google Sheets time stored as Date (1899-12-30 epoch)
+      const d = new Date(s);
+      if (!isNaN(d)) {
+        const h = String(d.getHours()).padStart(2,'0');
+        const m = String(d.getMinutes()).padStart(2,'0');
+        const sec = String(d.getSeconds()).padStart(2,'0');
+        return `${h}:${m}:${sec}`;
+      }
+      return s;
+    }
+
+    // ── Normalize all records ──
     const allRecords = (res.data || []).map(r => ({
-      date:       r.date       || r.Date       || r.DATE       || '',
-      checkIn:    r.checkIn    || r.CheckIn    || r.CHECKIN    || r.check_in  || '',
-      checkOut:   r.checkOut   || r.CheckOut   || r.CHECKOUT   || r.check_out || '',
-      employeeId: r.employeeId || r.EmployeeID || r.employeeid || r.EMPLOYEEID || ''
+      date:       parseDate(r.date || r.Date || r.DATE || ''),
+      checkIn:    parseTime(r.checkIn || r.CheckIn || r.CHECKIN || ''),
+      checkOut:   parseTime(r.checkOut || r.CheckOut || r.CHECKOUT || ''),
+      employeeId: String(r.employeeId || r.EmployeeID || r.employeeid || '').trim(),
+      name:       String(r.name || r.Name || '').trim()
     }));
 
-    // Filter by current user — compare lowercased and trimmed
-    const userId = String(user.id || '').trim().toLowerCase();
+    // ── Filter: match by employeeId OR by name (fallback) ──
+    const userId   = String(user.id   || '').trim().toLowerCase();
+    const userName = String(user.name || '').trim().toLowerCase();
     const records = allRecords.filter(r =>
-      String(r.employeeId || '').trim().toLowerCase() === userId
+      (r.employeeId && r.employeeId.toLowerCase() === userId) ||
+      (r.name       && r.name.toLowerCase()       === userName)
     );
-
-    // If still empty, show raw first record to debug
-    if (!records.length && allRecords.length > 0) {
-      const firstRaw = JSON.stringify(allRecords[0]);
-      console.warn('user.id =', user.id, '| first raw record:', firstRaw);
-      Toast.warning('DEBUG — تێبینی', `user.id="${user.id}" | ئەوەی گەڕایەوە: ${firstRaw}`);
-    } else if (!allRecords.length) {
-      Toast.warning('DEBUG', 'هیچ داتایەک نەگەڕایەوە لە سێرڤەر');
-    }
 
     const today = new Date().toISOString().split('T')[0];
     const todayRecords = records.filter(r => r.date && r.date.startsWith(today));
