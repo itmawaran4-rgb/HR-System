@@ -1,77 +1,87 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ckb" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR Nexus — My Profile</title>
+  <title>HR MAWARAN — پرۆفایلەکەم</title>
   <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .sidebar { right: 0; left: auto; transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-right: 260px; margin-left: 0; }
+    .topbar { flex-direction: row-reverse; }
+    .topbar-title { margin-right: 12px; margin-left: 0; }
+    .nav-item { flex-direction: row-reverse; text-align: right; }
+    .nav-icon { margin-right: 0; margin-left: 10px; }
+    .sidebar-header { flex-direction: row-reverse; }
+    .sidebar-user { text-align: right; }
+    .page-header { text-align: right; }
+    .profile-hero { flex-direction: row-reverse; }
+    .profile-info { text-align: right; }
+    .profile-tags { flex-direction: row-reverse; }
+    .card-header { flex-direction: row-reverse; }
+    .card-title { flex-direction: row-reverse; }
+    .profile-field { flex-direction: row-reverse; text-align: right; }
+    @media (max-width: 768px) {
+      .sidebar { right: 0; left: auto; transform: translateX(110%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-right: 0; }
+    }
+    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+  </style>
 </head>
 <body>
 <div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo-icon">🏢</div>
-    <div class="sidebar-logo-text">
-      <div class="brand-name">HR Nexus</div>
-      <div class="brand-sub">Employee Portal</div>
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="brand-name">HR MAWARAN</div>
+        <div class="brand-sub">پۆرتاڵی کارمەند</div>
+      </div>
     </div>
   </div>
-
   <div class="sidebar-user">
-    <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
-    <div class="sidebar-user-role" id="sidebarUserRole">Employee</div>
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
   </div>
-
   <nav class="sidebar-nav">
-    <div class="nav-section-label">Main Menu</div>
-    <a class="nav-item active" href="profile.html">
-      <span class="nav-icon">👤</span> My Profile
-    </a>
-    <a class="nav-item" href="attendance.html">
-      <span class="nav-icon">🕐</span> Attendance
-    </a>
-    <a class="nav-item" href="announcements.html">
-      <span class="nav-icon">📢</span> Announcements
-    </a>
-    <a class="nav-item" href="salary.html">
-      <span class="nav-icon">💰</span> My Salary
-    </a>
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
   </nav>
-
   <div class="sidebar-footer">
-    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
   </div>
 </aside>
 
-<!-- Main Content -->
 <div class="main-content">
-  <!-- Topbar -->
   <header class="topbar">
-    <button class="topbar-hamburger" id="hamburger">☰</button>
-    <span class="topbar-title">My Profile</span>
-    <div class="topbar-spacer"></div>
-    <span class="topbar-date" id="topbarDate"></span>
     <div class="topbar-avatar" id="topbarAvatar">?</div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-title">پرۆفایلەکەم</span>
+    <button class="topbar-hamburger" id="hamburger">☰</button>
   </header>
-
-  <!-- Page Content -->
   <main class="page-content">
     <div class="page-header">
-      <h1 class="page-title">Employee Profile</h1>
-      <p class="page-subtitle">Your personal and work information</p>
+      <h1 class="page-title">پرۆفایلی کارمەند</h1>
+      <p class="page-subtitle">زانیاری کەسی و کارەکەت</p>
     </div>
-
-    <!-- Loading state -->
     <div id="profileLoading" style="text-align:center;padding:60px">
       <div class="spinner" style="margin:0 auto 12px"></div>
-      <div class="text-muted">Loading your profile...</div>
+      <div class="text-muted">پرۆفایلەکەت بارکراوە...</div>
     </div>
-
-    <!-- Profile content (hidden until loaded) -->
     <div id="profileContent" style="display:none">
-      <!-- Hero card -->
       <div class="profile-hero">
         <div class="profile-avatar" id="profileAvatar">?</div>
         <div class="profile-info">
@@ -83,57 +93,37 @@
           </div>
         </div>
       </div>
-
-      <!-- Details grid -->
       <div class="card">
         <div class="card-header">
           <div class="card-title">
             <div class="card-title-icon blue">📋</div>
-            Personal Information
+            زانیاری کەسی
           </div>
         </div>
         <div class="profile-grid">
           <div class="profile-field">
             <div class="field-icon">🆔</div>
-            <div>
-              <div class="field-label">Employee ID</div>
-              <div class="field-value" id="detailId">—</div>
-            </div>
+            <div><div class="field-label">ناسنامەی کارمەند</div><div class="field-value" id="detailId">—</div></div>
           </div>
           <div class="profile-field">
             <div class="field-icon">🏢</div>
-            <div>
-              <div class="field-label">Department</div>
-              <div class="field-value" id="detailDept">—</div>
-            </div>
+            <div><div class="field-label">بەش</div><div class="field-value" id="detailDept">—</div></div>
           </div>
           <div class="profile-field">
             <div class="field-icon">💼</div>
-            <div>
-              <div class="field-label">Position</div>
-              <div class="field-value" id="detailPos">—</div>
-            </div>
+            <div><div class="field-label">پۆستە</div><div class="field-value" id="detailPos">—</div></div>
           </div>
           <div class="profile-field">
             <div class="field-icon">📞</div>
-            <div>
-              <div class="field-label">Phone</div>
-              <div class="field-value" id="detailPhone">—</div>
-            </div>
+            <div><div class="field-label">تەلەفۆن</div><div class="field-value" id="detailPhone">—</div></div>
           </div>
           <div class="profile-field">
             <div class="field-icon">✉️</div>
-            <div>
-              <div class="field-label">Email</div>
-              <div class="field-value" id="detailEmail">—</div>
-            </div>
+            <div><div class="field-label">ئیمەیل</div><div class="field-value" id="detailEmail">—</div></div>
           </div>
           <div class="profile-field">
             <div class="field-icon">📅</div>
-            <div>
-              <div class="field-label">Hire Date</div>
-              <div class="field-value" id="detailHire">—</div>
-            </div>
+            <div><div class="field-label">بەرواری دەستپێکردن</div><div class="field-value" id="detailHire">—</div></div>
           </div>
         </div>
       </div>
@@ -146,39 +136,30 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const user = requireAuth(false);
   if (!user) return;
-
   try {
-    // Fetch fresh employee data from API
     const res = await API.getEmployees();
-    let emp = user; // fallback to session data
-
+    let emp = user;
     if (res.success && res.data) {
       const found = res.data.find(e => e.id === user.id);
       if (found) emp = { ...found, role: user.role };
     }
-
-    // Populate UI
     document.getElementById('profileLoading').style.display = 'none';
     document.getElementById('profileContent').style.display = 'block';
-
     const initials = getInitials(emp.name);
     document.getElementById('profileAvatar').textContent  = initials;
     document.getElementById('profileName').textContent    = emp.name || '—';
     document.getElementById('profilePosition').textContent = emp.position || '—';
     document.getElementById('profileDept').textContent    = emp.department || '—';
-    document.getElementById('profileId').textContent      = `ID: ${emp.id}`;
-
+    document.getElementById('profileId').textContent      = `ناسنامە: ${emp.id}`;
     document.getElementById('detailId').textContent    = emp.id;
     document.getElementById('detailDept').textContent  = emp.department || '—';
     document.getElementById('detailPos').textContent   = emp.position || '—';
     document.getElementById('detailPhone').textContent = emp.phone || '—';
     document.getElementById('detailEmail').textContent = emp.email || '—';
     document.getElementById('detailHire').textContent  = formatDate(emp.hireDate);
-
   } catch (e) {
-    console.error('Profile load error:', e);
     document.getElementById('profileLoading').innerHTML =
-      `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Failed to load profile</div><div class="empty-desc">${e.message}</div></div>`;
+      `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">هەڵە لە بارکردنی پرۆفایل</div><div class="empty-desc">${e.message}</div></div>`;
   }
 });
 </script>
