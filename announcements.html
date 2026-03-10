@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Nexus — Announcements</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-text">
+      <div class="brand-name">HR Nexus</div>
+      <div class="brand-sub">Employee Portal</div>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">Employee</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main Menu</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> My Profile</a>
+    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> Attendance</a>
+    <a class="nav-item active" href="announcements.html"><span class="nav-icon">📢</span> Announcements</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> My Salary</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main-content">
+  <header class="topbar">
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+    <span class="topbar-title">Announcements</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-avatar" id="topbarAvatar">?</div>
+  </header>
+
+  <main class="page-content">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 class="page-title">Company Announcements</h1>
+        <p class="page-subtitle">Stay up to date with the latest company news</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 Refresh</button>
+    </div>
+
+    <!-- Search bar -->
+    <div style="margin-bottom:20px">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="form-control search-input" id="annSearchInput" placeholder="Search announcements...">
+      </div>
+    </div>
+
+    <!-- Announcement list -->
+    <div id="annList">
+      <div class="loading-rows">
+        <div class="spinner" style="margin:0 auto 12px"></div>
+        Loading announcements...
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+<script>
+let allAnnouncements = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  requireAuth(false);
+  await loadAnnouncements();
+
+  document.getElementById('annSearchInput').addEventListener('input', debounce(filterAnn, 300));
+});
+
+async function loadAnnouncements() {
+  const listEl = document.getElementById('annList');
+  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading announcements...</div>`;
+
+  try {
+    const res = await API.getAnnouncements();
+    if (!res.success) throw new Error(res.message);
+
+    allAnnouncements = res.data || [];
+    renderAnnouncements(allAnnouncements);
+
+  } catch (e) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-title">Failed to load announcements</div>
+        <div class="empty-desc">${e.message}</div>
+      </div>`;
+    Toast.error('Load Failed', e.message);
+  }
+}
+
+function renderAnnouncements(data) {
+  const listEl = document.getElementById('annList');
+
+  if (!data.length) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📢</div>
+        <div class="empty-title">No announcements yet</div>
+        <div class="empty-desc">Check back later for company updates</div>
+      </div>`;
+    return;
+  }
+
+  // Sort newest first
+  const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  listEl.innerHTML = sorted.map(ann => `
+    <div class="announcement-card">
+      <div class="announcement-title">${escapeHtml(ann.title)}</div>
+      <div class="announcement-body">${escapeHtml(ann.message)}</div>
+      <div class="announcement-meta">
+        <span>📅</span>
+        <span>${formatDate(ann.date)}</span>
+        <span style="margin-left:8px;color:var(--text-muted)">• HR Department</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterAnn() {
+  const q = document.getElementById('annSearchInput').value.toLowerCase();
+  const filtered = allAnnouncements.filter(a =>
+    a.title?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q)
+  );
+  renderAnnouncements(filtered);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Nexus — Admin Dashboard</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- ═══════════════════════════════════════
+     SIDEBAR
+     ═══════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-text">
+      <div class="brand-name">HR Nexus</div>
+      <div class="brand-sub">Admin Dashboard</div>
+    </div>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">Admin</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">HR Admin</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Dashboard</div>
+    <a class="nav-item active" data-tab="tab-overview" data-load="loadReports">
+      <span class="nav-icon">📊</span> Overview
+    </a>
+
+    <div class="nav-section-label">Management</div>
+    <a class="nav-item" data-tab="tab-employees" data-load="loadEmployees">
+      <span class="nav-icon">👥</span> Employees
+    </a>
+    <a class="nav-item" data-tab="tab-attendance" data-load="loadAttendance">
+      <span class="nav-icon">🕐</span> Attendance
+    </a>
+    <a class="nav-item" data-tab="tab-salary" data-load="loadSalary">
+      <span class="nav-icon">💰</span> Salary & Bonuses
+    </a>
+    <a class="nav-item" data-tab="tab-announcements" data-load="loadAnnouncements">
+      <span class="nav-icon">📢</span> Announcements
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════ -->
+<div class="main-content">
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+    <span class="topbar-title" id="topbarTitleEl">Overview</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-avatar" id="topbarAvatar">HR</div>
+  </header>
+
+  <main class="page-content">
+
+    <!-- ══════════════════════════════
+         TAB: OVERVIEW / REPORTS
+         ══════════════════════════════ -->
+    <div class="admin-tab-content active" id="tab-overview">
+      <div class="page-header">
+        <h1 class="page-title">Dashboard Overview</h1>
+        <p class="page-subtitle">Company-wide statistics at a glance</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card gold">
+          <div class="stat-info">
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-value" id="statTotalEmployees">—</div>
+            <div class="stat-sub">Active staff members</div>
+          </div>
+          <div class="stat-icon gold">👥</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-info">
+            <div class="stat-label">Attendance Records</div>
+            <div class="stat-value" id="statTotalAttendance">—</div>
+            <div class="stat-sub">Total check-ins logged</div>
+          </div>
+          <div class="stat-icon green">🕐</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-info">
+            <div class="stat-label">Total Bonuses</div>
+            <div class="stat-value" id="statTotalBonuses">—</div>
+            <div class="stat-sub">Across all employees</div>
+          </div>
+          <div class="stat-icon blue">🎁</div>
+        </div>
+        <div class="stat-card rose">
+          <div class="stat-info">
+            <div class="stat-label">Total Deductions</div>
+            <div class="stat-value" id="statTotalDeductions">—</div>
+            <div class="stat-sub">Across all employees</div>
+          </div>
+          <div class="stat-icon rose">📉</div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon gold">⚡</div>Quick Actions</div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="switchAdminTab('tab-employees','loadEmployees','Employees')">
+            ➕ Add Employee
+          </button>
+          <button class="btn btn-info" onclick="switchAdminTab('tab-announcements','loadAnnouncements','Announcements')">
+            📢 Post Announcement
+          </button>
+          <button class="btn btn-success" onclick="switchAdminTab('tab-salary','loadSalary','Salary & Bonuses')">
+            💰 Manage Salaries
+          </button>
+          <button class="btn btn-secondary" onclick="switchAdminTab('tab-attendance','loadAttendance','Attendance')">
+            📋 View Attendance
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: EMPLOYEES
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-employees">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Employee Management</h1>
+          <p class="page-subtitle">Add, edit and manage your workforce</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddEmployee()">➕ Add Employee</button>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control search-input" id="empSearch" placeholder="Search employees...">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadEmployees()">🔄 Refresh</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Position</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Hire Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="empTableBody">
+            <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: ATTENDANCE
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-attendance">
+      <div class="page-header">
+        <h1 class="page-title">Attendance Records</h1>
+        <p class="page-subtitle">Track employee check-in and check-out history</p>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" class="form-control" id="attEmpFilter" placeholder="Filter by employee ID or name...">
+        <input type="date"  class="form-control" id="attDateFilter">
+        <button class="btn btn-secondary btn-sm" onclick="loadAttendance()">🔄 Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('attEmpFilter').value='';document.getElementById('attDateFilter').value='';filterAttendance()">✕ Clear</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Check-In</th>
+              <th>Check-Out</th>
+            </tr>
+          </thead>
+          <tbody id="attTableBody">
+            <tr><td colspan="5" class="loading-rows">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: SALARY
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-salary">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Salary, Bonuses & Deductions</h1>
+          <p class="page-subtitle">Manage compensation records for all employees</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddSalary()">➕ Add Record</button>
+      </div>
+
+      <div class="filter-bar">
+        <select class="form-control" id="salEmpFilter">
+          <option value="">All Employees</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadSalary()">🔄 Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('salEmpFilter').value='';filterSalary()">✕ Clear</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Emp. ID</th>
+              <th>Name</th>
+              <th>Bonus</th>
+              <th>Deduction</th>
+              <th>Notes</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="salTableBody">
+            <tr><td colspan="7" class="loading-rows">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         TAB: ANNOUNCEMENTS
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-announcements">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Announcements</h1>
+          <p class="page-subtitle">Publish company-wide notices and updates</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddAnnouncement()">➕ New Announcement</button>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-wrap" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control search-input" id="annSearch" placeholder="Search announcements...">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 Refresh</button>
+      </div>
+
+      <div id="annList">
+        <div class="loading-rows">Loading...</div>
+      </div>
+    </div>
+
+  </main><!-- /page-content -->
+</div><!-- /main-content -->
+
+<!-- ═══════════════════════════════════════
+     MODALS
+     ═══════════════════════════════════════ -->
+
+<!-- Employee Modal -->
+<div class="modal-overlay" id="empModal" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="empModalTitle">Add New Employee</div>
+      <button class="modal-close" onclick="closeModal('empModal')">×</button>
+    </div>
+    <form id="empForm" onsubmit="return false">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Employee ID *</label>
+          <input type="text" class="form-control" id="empId" placeholder="e.g. EMP001" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" class="form-control" id="empName" placeholder="Full name" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Department *</label>
+          <input type="text" class="form-control" id="empDepartment" placeholder="e.g. Engineering" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Position</label>
+          <input type="text" class="form-control" id="empPosition" placeholder="e.g. Senior Developer">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-control" id="empPhone" placeholder="+1 234 567 8900">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="empEmail" placeholder="email@company.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hire Date</label>
+          <input type="date" class="form-control" id="empHireDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password *</label>
+          <input type="password" class="form-control" id="empPassword" placeholder="Set login password" required>
+        </div>
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('empModal')">Cancel</button>
+      <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee()">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- Announcement Modal -->
+<div class="modal-overlay" id="annModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="annModalTitle">New Announcement</div>
+      <button class="modal-close" onclick="closeModal('annModal')">×</button>
+    </div>
+    <form id="annForm" onsubmit="return false">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" class="form-control" id="annTitle" placeholder="Announcement title" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message *</label>
+        <textarea class="form-control" id="annMessage" rows="5" placeholder="Write your announcement..." required></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" id="annDate">
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('annModal')">Cancel</button>
+      <button class="btn btn-primary" id="annSaveBtn" onclick="saveAnnouncement()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Salary Modal -->
+<div class="modal-overlay" id="salModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="salModalTitle">Add Bonus / Deduction</div>
+      <button class="modal-close" onclick="closeModal('salModal')">×</button>
+    </div>
+    <form id="salForm" onsubmit="return false">
+      <div class="form-group">
+        <label class="form-label">Employee *</label>
+        <select class="form-control" id="salEmployeeId" required>
+          <option value="">Select Employee</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Bonus Amount</label>
+          <input type="number" class="form-control" id="salBonus" placeholder="0.00" min="0" step="0.01" value="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deduction Amount</label>
+          <input type="number" class="form-control" id="salDeduction" placeholder="0.00" min="0" step="0.01" value="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" id="salNotes" rows="3" placeholder="Reason or additional notes..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-control" id="salDate">
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('salModal')">Cancel</button>
+      <button class="btn btn-primary" id="salSaveBtn" onclick="saveSalary()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/script.js"></script>
+<script src="assets/admin.js"></script>
+<script>
+/**
+ * Helper to switch admin tab from quick-action buttons or external calls
+ */
+function switchAdminTab(tabId, loadFn, title) {
+  // Update active sidebar item
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
+  // Update topbar title
+  document.getElementById('topbarTitleEl').textContent = title || 'Dashboard';
+  // Show tab
+  showAdminTab(tabId, loadFn);
+}
+
+// Update topbar title on tab switch
+document.querySelectorAll('[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const titles = {
+      'tab-overview':      'Overview',
+      'tab-employees':     'Employees',
+      'tab-attendance':    'Attendance',
+      'tab-salary':        'Salary & Bonuses',
+      'tab-announcements': 'Announcements'
+    };
+    document.getElementById('topbarTitleEl').textContent = titles[btn.dataset.tab] || 'Dashboard';
+  });
+});
+</script>
+</body>
+</html>

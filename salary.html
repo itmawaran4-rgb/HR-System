@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Nexus — My Salary</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-text">
+      <div class="brand-name">HR Nexus</div>
+      <div class="brand-sub">Employee Portal</div>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">Employee</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main Menu</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> My Profile</a>
+    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> Attendance</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> Announcements</a>
+    <a class="nav-item active" href="salary.html"><span class="nav-icon">💰</span> My Salary</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main-content">
+  <header class="topbar">
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+    <span class="topbar-title">My Salary</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-avatar" id="topbarAvatar">?</div>
+  </header>
+
+  <main class="page-content">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 class="page-title">Salary Overview</h1>
+        <p class="page-subtitle">Your bonuses, deductions and notes from HR</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="loadSalary()">🔄 Refresh</button>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="salary-summary" id="salarySummary">
+      <div class="salary-card">
+        <div class="salary-amount positive" id="totalBonuses">—</div>
+        <div class="salary-label">Total Bonuses</div>
+      </div>
+      <div class="salary-card">
+        <div class="salary-amount negative" id="totalDeductions">—</div>
+        <div class="salary-label">Total Deductions</div>
+      </div>
+      <div class="salary-card">
+        <div class="salary-amount neutral" id="netAmount">—</div>
+        <div class="salary-label">Net (Bonus - Deduction)</div>
+      </div>
+    </div>
+
+    <!-- Salary records table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-title-icon gold">💰</div>
+          Salary Records
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Bonus</th>
+              <th>Deduction</th>
+              <th>Net</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="salaryTableBody">
+            <tr><td colspan="5" class="loading-rows">Loading salary data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  requireAuth(false);
+  await loadSalary();
+});
+
+async function loadSalary() {
+  const user = Session.get();
+  const tbody = document.getElementById('salaryTableBody');
+  tbody.innerHTML = `<tr><td colspan="5" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>`;
+
+  try {
+    const res = await API.getSalary(user.id);
+    if (!res.success) throw new Error(res.message);
+
+    const records = res.data || [];
+
+    // Calculate totals
+    let totalBonus     = 0;
+    let totalDeduction = 0;
+    records.forEach(r => {
+      totalBonus     += parseFloat(r.bonus)     || 0;
+      totalDeduction += parseFloat(r.deduction) || 0;
+    });
+    const net = totalBonus - totalDeduction;
+
+    document.getElementById('totalBonuses').textContent    = `+${formatCurrency(totalBonus)}`;
+    document.getElementById('totalDeductions').textContent = `-${formatCurrency(totalDeduction)}`;
+    const netEl = document.getElementById('netAmount');
+    netEl.textContent = (net >= 0 ? '+' : '') + formatCurrency(net);
+    netEl.className   = `salary-amount ${net >= 0 ? 'positive' : 'negative'}`;
+
+    if (!records.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">No salary records yet</div><div class="empty-desc">Contact HR for more information</div></div></td></tr>`;
+      return;
+    }
+
+    // Sort newest first
+    const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+    tbody.innerHTML = sorted.map(r => {
+      const bonus     = parseFloat(r.bonus)     || 0;
+      const deduction = parseFloat(r.deduction) || 0;
+      const rowNet    = bonus - deduction;
+      return `
+        <tr>
+          <td class="bold">${formatDate(r.date)}</td>
+          <td class="text-green font-bold">+${formatCurrency(bonus)}</td>
+          <td class="text-red font-bold">-${formatCurrency(deduction)}</td>
+          <td class="${rowNet >= 0 ? 'text-green' : 'text-red'} font-bold">
+            ${rowNet >= 0 ? '+' : ''}${formatCurrency(rowNet)}
+          </td>
+          <td class="text-muted">${escapeHtml(r.notes || '—')}</td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" class="loading-rows text-red">${e.message}</td></tr>`;
+    Toast.error('Failed to load salary data', e.message);
+  }
+}
+</script>
+</body>
+</html>

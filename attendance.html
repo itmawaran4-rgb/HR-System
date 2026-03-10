@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Nexus — Attendance</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-text">
+      <div class="brand-name">HR Nexus</div>
+      <div class="brand-sub">Employee Portal</div>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">Employee</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main Menu</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> My Profile</a>
+    <a class="nav-item active" href="attendance.html"><span class="nav-icon">🕐</span> Attendance</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> Announcements</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> My Salary</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main-content">
+  <header class="topbar">
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+    <span class="topbar-title">Attendance</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-avatar" id="topbarAvatar">?</div>
+  </header>
+
+  <main class="page-content">
+    <div class="page-header">
+      <h1 class="page-title">Attendance Tracker</h1>
+      <p class="page-subtitle">Record your daily check-in and check-out times</p>
+    </div>
+
+    <!-- Clock & Actions -->
+    <div class="attendance-clock">
+      <div class="clock-display" id="clockDisplay">00:00:00</div>
+      <div class="clock-date" id="clockDate">Loading date...</div>
+
+      <div class="attendance-actions">
+        <button class="btn btn-success clock-btn" id="checkInBtn" onclick="doCheckIn()">
+          ✅ Check In
+        </button>
+        <button class="btn btn-danger clock-btn" id="checkOutBtn" onclick="doCheckOut()" disabled>
+          🔴 Check Out
+        </button>
+      </div>
+
+      <div class="status-indicator" id="statusIndicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Not checked in today</span>
+      </div>
+    </div>
+
+    <!-- Today's Summary -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px" id="todaySummary">
+      <div class="stat-card green">
+        <div class="stat-info">
+          <div class="stat-label">Check-In Time</div>
+          <div class="stat-value" id="todayCheckIn" style="font-size:22px">—</div>
+        </div>
+        <div class="stat-icon green">✅</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-info">
+          <div class="stat-label">Check-Out Time</div>
+          <div class="stat-value" id="todayCheckOut" style="font-size:22px">—</div>
+        </div>
+        <div class="stat-icon blue">🔴</div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-title-icon blue">📋</div>
+          Attendance History
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄 Refresh</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Check-In</th>
+              <th>Check-Out</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="attHistoryBody">
+            <tr><td colspan="4" class="loading-rows">Loading history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+<script>
+let todayRecord = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = requireAuth(false);
+  if (!user) return;
+
+  startClock('clockDisplay', 'clockDate');
+  await loadAttendanceHistory();
+});
+
+async function loadAttendanceHistory() {
+  const user = Session.get();
+  document.getElementById('attHistoryBody').innerHTML =
+    `<tr><td colspan="4" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>`;
+
+  try {
+    const res = await API.getAttendance({ employeeId: user.id });
+    if (!res.success) throw new Error(res.message);
+
+    const records = res.data || [];
+    const today   = new Date().toISOString().split('T')[0];
+
+    // Check today's status
+    todayRecord = records.find(r => r.date === today);
+    updateTodayStatus(todayRecord);
+
+    // Render table (newest first)
+    const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const tbody  = document.getElementById('attHistoryBody');
+
+    if (!sorted.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No attendance records yet</div></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = sorted.map(r => {
+      const complete = r.checkOut && r.checkOut !== '—';
+      return `
+        <tr>
+          <td class="bold">${formatDate(r.date)}</td>
+          <td><span class="badge badge-green">${r.checkIn || '—'}</span></td>
+          <td>${complete ? `<span class="badge badge-blue">${r.checkOut}</span>` : '<span class="badge badge-muted">—</span>'}</td>
+          <td>${complete
+            ? '<span class="badge badge-green">Complete</span>'
+            : r.checkIn
+              ? '<span class="badge badge-gold">In Progress</span>'
+              : '<span class="badge badge-muted">Absent</span>'
+          }</td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (e) {
+    document.getElementById('attHistoryBody').innerHTML =
+      `<tr><td colspan="4" class="loading-rows text-red">${e.message}</td></tr>`;
+    Toast.error('Failed to load attendance', e.message);
+  }
+}
+
+function updateTodayStatus(record) {
+  const checkInBtn  = document.getElementById('checkInBtn');
+  const checkOutBtn = document.getElementById('checkOutBtn');
+  const statusDot   = document.getElementById('statusDot');
+  const statusText  = document.getElementById('statusText');
+  const todayCI     = document.getElementById('todayCheckIn');
+  const todayCO     = document.getElementById('todayCheckOut');
+
+  if (!record) {
+    checkInBtn.disabled  = false;
+    checkOutBtn.disabled = true;
+    statusDot.className  = 'status-dot';
+    statusText.textContent = 'Not checked in today';
+    todayCI.textContent  = '—';
+    todayCO.textContent  = '—';
+  } else if (record.checkIn && (!record.checkOut || record.checkOut === '—')) {
+    // Checked in but not out
+    checkInBtn.disabled  = true;
+    checkOutBtn.disabled = false;
+    statusDot.className  = 'status-dot checked-in';
+    statusText.textContent = `Checked in at ${record.checkIn}`;
+    todayCI.textContent  = record.checkIn;
+    todayCO.textContent  = '—';
+  } else {
+    // Fully complete
+    checkInBtn.disabled  = true;
+    checkOutBtn.disabled = true;
+    statusDot.className  = 'status-dot';
+    statusDot.style.background = 'var(--blue-500)';
+    statusText.textContent = `Day complete — ${record.checkIn} → ${record.checkOut}`;
+    todayCI.textContent  = record.checkIn;
+    todayCO.textContent  = record.checkOut;
+  }
+}
+
+async function doCheckIn() {
+  const user = Session.get();
+  const btn  = document.getElementById('checkInBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> Checking in...';
+
+  try {
+    const res = await API.checkIn(user.id, user.name);
+    if (res.success) {
+      Toast.success('Checked In!', `Welcome, ${user.name}!`);
+      await loadAttendanceHistory();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Check-In Failed', e.message);
+    btn.disabled = false;
+    btn.innerHTML = '✅ Check In';
+  }
+}
+
+async function doCheckOut() {
+  const user = Session.get();
+  const btn  = document.getElementById('checkOutBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> Checking out...';
+
+  try {
+    const res = await API.checkOut(user.id);
+    if (res.success) {
+      Toast.success('Checked Out!', 'See you tomorrow!');
+      await loadAttendanceHistory();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Check-Out Failed', e.message);
+    btn.disabled = false;
+    btn.innerHTML = '🔴 Check Out';
+  }
+}
+</script>
+</body>
+</html>

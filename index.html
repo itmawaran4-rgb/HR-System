@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Nexus — Login</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-bg"></div>
+  <div class="login-grid"></div>
+
+  <div class="login-container">
+    <!-- Brand Panel -->
+    <div class="login-brand">
+      <div class="brand-logo">
+        <div class="brand-icon">🏢</div>
+        <div>
+          <div class="brand-name">HR Nexus</div>
+          <div class="brand-sub">Human Resources Management</div>
+        </div>
+      </div>
+
+      <h1 class="brand-headline">
+        Manage Your<br>Workforce with<br><span>Precision</span>
+      </h1>
+      <p class="brand-desc">
+        A complete HR platform for attendance tracking, payroll management, and team communications.
+      </p>
+
+      <div class="brand-features">
+        <div class="brand-feature">
+          <div class="brand-feature-dot"></div>
+          <span>Real-time attendance tracking</span>
+        </div>
+        <div class="brand-feature">
+          <div class="brand-feature-dot"></div>
+          <span>Salary, bonus & deduction management</span>
+        </div>
+        <div class="brand-feature">
+          <div class="brand-feature-dot"></div>
+          <span>Company-wide announcements</span>
+        </div>
+        <div class="brand-feature">
+          <div class="brand-feature-dot"></div>
+          <span>Powered by Google Sheets</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Panel -->
+    <div class="login-form-panel">
+      <h2 class="form-title">Welcome Back</h2>
+      <p class="form-subtitle">Sign in to your account to continue</p>
+
+      <!-- Role Tabs -->
+      <div class="role-tabs">
+        <button class="role-tab active" id="tabEmployee" onclick="switchRole('employee')">👤 Employee</button>
+        <button class="role-tab" id="tabAdmin" onclick="switchRole('admin')">🛡️ HR Admin</button>
+      </div>
+
+      <!-- Error message -->
+      <div class="error-msg" id="loginError">
+        <span>⚠</span>
+        <span id="loginErrorText">Invalid credentials. Please try again.</span>
+      </div>
+
+      <!-- Login Form -->
+      <div class="form-group">
+        <label class="form-label" for="loginId" id="idLabel">Employee ID</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">👤</span>
+          <input type="text" class="form-control" id="loginId" placeholder="Enter your ID" autocomplete="username">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔑</span>
+          <input type="password" class="form-control" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" id="loginBtn" onclick="doLogin()">
+        Sign In
+      </button>
+
+      <p class="text-muted text-sm" style="text-align:center;margin-top:20px">
+        Contact HR if you forgot your credentials
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="assets/script.js"></script>
+<script>
+  let currentRole = 'employee';
+
+  // If already logged in, redirect
+  window.addEventListener('DOMContentLoaded', () => {
+    const user = Session.get();
+    if (user) {
+      redirectUser(user);
+    }
+    // Allow Enter key to submit
+    document.getElementById('loginPassword').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('loginId').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+  });
+
+  function switchRole(role) {
+    currentRole = role;
+    document.getElementById('tabEmployee').classList.toggle('active', role === 'employee');
+    document.getElementById('tabAdmin').classList.toggle('active', role === 'admin');
+    document.getElementById('idLabel').textContent = role === 'admin' ? 'Admin ID' : 'Employee ID';
+    document.getElementById('loginId').placeholder = role === 'admin' ? 'Enter admin ID' : 'Enter your ID';
+    hideError();
+  }
+
+  async function doLogin() {
+    const id       = document.getElementById('loginId').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn      = document.getElementById('loginBtn');
+
+    hideError();
+
+    if (!id || !password) {
+      showError('Please enter both ID and password.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner spinner-sm"></span> Signing in...';
+
+    try {
+      const res = await API.login(id, password, currentRole);
+
+      if (res.success && res.data) {
+        // Save session
+        const user = { ...res.data, role: currentRole };
+        Session.set(user);
+        Toast.success('Welcome back!', `Hello, ${user.name || id}`);
+        setTimeout(() => redirectUser(user), 600);
+      } else {
+        showError(res.message || 'Invalid credentials. Please try again.');
+      }
+    } catch (e) {
+      console.error('Login error:', e);
+      showError('Connection failed. Please check your network or API URL.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+    }
+  }
+
+  function redirectUser(user) {
+    if (user.role === 'admin') {
+      window.location.href = 'admin.html';
+    } else {
+      window.location.href = 'profile.html';
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('loginError');
+    document.getElementById('loginErrorText').textContent = msg;
+    el.classList.add('show');
+  }
+  function hideError() {
+    document.getElementById('loginError').classList.remove('show');
+  }
+</script>
+</body>
+</html>

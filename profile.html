@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Nexus — My Profile</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-text">
+      <div class="brand-name">HR Nexus</div>
+      <div class="brand-sub">Employee Portal</div>
+    </div>
+  </div>
+
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">Employee</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main Menu</div>
+    <a class="nav-item active" href="profile.html">
+      <span class="nav-icon">👤</span> My Profile
+    </a>
+    <a class="nav-item" href="attendance.html">
+      <span class="nav-icon">🕐</span> Attendance
+    </a>
+    <a class="nav-item" href="announcements.html">
+      <span class="nav-icon">📢</span> Announcements
+    </a>
+    <a class="nav-item" href="salary.html">
+      <span class="nav-icon">💰</span> My Salary
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+    <span class="topbar-title">My Profile</span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-avatar" id="topbarAvatar">?</div>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div class="page-header">
+      <h1 class="page-title">Employee Profile</h1>
+      <p class="page-subtitle">Your personal and work information</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="profileLoading" style="text-align:center;padding:60px">
+      <div class="spinner" style="margin:0 auto 12px"></div>
+      <div class="text-muted">Loading your profile...</div>
+    </div>
+
+    <!-- Profile content (hidden until loaded) -->
+    <div id="profileContent" style="display:none">
+      <!-- Hero card -->
+      <div class="profile-hero">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div class="profile-info">
+          <div class="profile-name" id="profileName">—</div>
+          <div class="profile-pos" id="profilePosition">—</div>
+          <div class="profile-tags">
+            <span class="badge badge-blue" id="profileDept">—</span>
+            <span class="badge badge-gold" id="profileId">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details grid -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon blue">📋</div>
+            Personal Information
+          </div>
+        </div>
+        <div class="profile-grid">
+          <div class="profile-field">
+            <div class="field-icon">🆔</div>
+            <div>
+              <div class="field-label">Employee ID</div>
+              <div class="field-value" id="detailId">—</div>
+            </div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">🏢</div>
+            <div>
+              <div class="field-label">Department</div>
+              <div class="field-value" id="detailDept">—</div>
+            </div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">💼</div>
+            <div>
+              <div class="field-label">Position</div>
+              <div class="field-value" id="detailPos">—</div>
+            </div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">📞</div>
+            <div>
+              <div class="field-label">Phone</div>
+              <div class="field-value" id="detailPhone">—</div>
+            </div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">✉️</div>
+            <div>
+              <div class="field-label">Email</div>
+              <div class="field-value" id="detailEmail">—</div>
+            </div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">📅</div>
+            <div>
+              <div class="field-label">Hire Date</div>
+              <div class="field-value" id="detailHire">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = requireAuth(false);
+  if (!user) return;
+
+  try {
+    // Fetch fresh employee data from API
+    const res = await API.getEmployees();
+    let emp = user; // fallback to session data
+
+    if (res.success && res.data) {
+      const found = res.data.find(e => e.id === user.id);
+      if (found) emp = { ...found, role: user.role };
+    }
+
+    // Populate UI
+    document.getElementById('profileLoading').style.display = 'none';
+    document.getElementById('profileContent').style.display = 'block';
+
+    const initials = getInitials(emp.name);
+    document.getElementById('profileAvatar').textContent  = initials;
+    document.getElementById('profileName').textContent    = emp.name || '—';
+    document.getElementById('profilePosition').textContent = emp.position || '—';
+    document.getElementById('profileDept').textContent    = emp.department || '—';
+    document.getElementById('profileId').textContent      = `ID: ${emp.id}`;
+
+    document.getElementById('detailId').textContent    = emp.id;
+    document.getElementById('detailDept').textContent  = emp.department || '—';
+    document.getElementById('detailPos').textContent   = emp.position || '—';
+    document.getElementById('detailPhone').textContent = emp.phone || '—';
+    document.getElementById('detailEmail').textContent = emp.email || '—';
+    document.getElementById('detailHire').textContent  = formatDate(emp.hireDate);
+
+  } catch (e) {
+    console.error('Profile load error:', e);
+    document.getElementById('profileLoading').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Failed to load profile</div><div class="empty-desc">${e.message}</div></div>`;
+  }
+});
+</script>
+</body>
+</html>
