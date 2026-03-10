@@ -138,6 +138,25 @@
   </main>
 </div>
 
+<!-- Outside Office Modal -->
+<div class="modal-overlay" id="outsideModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Outside Office Range</div>
+      <button class="modal-close" onclick="closeModal('outsideModal')">×</button>
+    </div>
+    <div style="padding:20px;text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">📍</div>
+      <p id="outsideModalMsg" style="margin-bottom:16px;color:var(--text-muted)"></p>
+      <p style="color:var(--gold-500);font-weight:600">دەتوانیت داواکاری بنێریت بۆ مۆڵەتی ئەدمین</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('outsideModal')">❌ هەڵوەشاندنەوە</button>
+      <button class="btn btn-primary" id="outsideSendBtn" onclick="sendOutsideRequest()">📤 نێردنی داواکاری</button>
+    </div>
+  </div>
+</div>
+
 <script src="assets/script.js"></script>
 <script>
 let todayRecord = null;
@@ -304,6 +323,9 @@ function updateTodayStatus(record) {
   }
 }
 
+// Stores pending outside-office action
+let _pendingOutside = null;
+
 async function doCheckIn() {
   const user = Session.get();
   const btn = document.getElementById('checkInBtn');
@@ -311,17 +333,22 @@ async function doCheckIn() {
   btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
   try {
     const loc = await checkLocation();
-    if (!loc.allowed) throw new Error(`تۆ ${loc.distance} مەتر دوورە لە ئۆفیس. دەبێت لە ناو ${COMPANY_LOCATION.maxDistance} مەتر بێیت.`);
+    if (!loc.allowed) {
+      btn.disabled = false;
+      btn.innerHTML = '✅ هاتنەژوورەوە';
+      _pendingOutside = { action: 'checkin', loc };
+      document.getElementById('outsideModalMsg').textContent =
+        `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
+      openModal('outsideModal');
+      return;
+    }
     btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
     const res = await API.checkIn(user.id, user.name);
     if (res.success) {
       const now = res.data && res.data.checkIn ? res.data.checkIn : new Date().toLocaleTimeString('en-GB');
-      Toast.success('هاتنەژوورەوە تۆماركرا! 📍', `بەخێربێیت، ${user.name}! (${loc.distance} مەتر لە ئۆفیس)`);
-      // Update UI directly from API response — don't wait for history reload
-      btn.disabled = true;
-      btn.innerHTML = '✅ هاتنەژوورەوە';
+      Toast.success('هاتنەژوورەوە تۆماركرا! 📍', `بەخێربێیت، ${user.name}!`);
+      btn.disabled = true; btn.innerHTML = '✅ هاتنەژوورەوە';
       document.getElementById('checkOutBtn').disabled = false;
-      document.getElementById('checkOutBtn').innerHTML = '🔴 چوونەدەرەوە';
       document.getElementById('statusDot').className = 'status-dot checked-in';
       document.getElementById('statusText').textContent = `هاتوویتەژوورەوە لە ${now}`;
       document.getElementById('todayCheckIn').textContent = now;
@@ -330,8 +357,7 @@ async function doCheckIn() {
     } else throw new Error(res.message);
   } catch (e) {
     Toast.error('هاتنەژوورەوە سەرکەوتوو نەبوو', e.message);
-    btn.disabled = false;
-    btn.innerHTML = '✅ هاتنەژوورەوە';
+    btn.disabled = false; btn.innerHTML = '✅ هاتنەژوورەوە';
   }
 }
 
@@ -342,13 +368,21 @@ async function doCheckOut() {
   btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
   try {
     const loc = await checkLocation();
-    if (!loc.allowed) throw new Error(`تۆ ${loc.distance} مەتر دوورە لە ئۆفیس. دەبێت لە ناو ${COMPANY_LOCATION.maxDistance} مەتر بێیت.`);
+    if (!loc.allowed) {
+      btn.disabled = false;
+      btn.innerHTML = '🔴 چوونەدەرەوە';
+      _pendingOutside = { action: 'checkout', loc };
+      document.getElementById('outsideModalMsg').textContent =
+        `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
+      openModal('outsideModal');
+      return;
+    }
     btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
-    const res = await API.checkOut(user.id);
+    const res = await API.checkOut(user.id, user.name);
     if (res.success) {
       const now = res.data && res.data.checkOut ? res.data.checkOut : new Date().toLocaleTimeString('en-GB');
       const ci  = document.getElementById('todayCheckIn').textContent;
-      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `بەیانت باش! (${loc.distance} مەتر لە ئۆفیس)`);
+      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `بەیانت باش!`);
       // Update UI directly
       btn.disabled = true;
       btn.innerHTML = '🔴 چوونەدەرەوە';
@@ -363,6 +397,35 @@ async function doCheckOut() {
     Toast.error('چوونەدەرەوە سەرکەوتوو نەبوو', e.message);
     btn.disabled = false;
     btn.innerHTML = '🔴 چوونەدەرەوە';
+  }
+}
+
+async function sendOutsideRequest() {
+  const user = Session.get();
+  if (!_pendingOutside) return;
+  const btn = document.getElementById('outsideSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
+  try {
+    const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
+    const res = await API.addRequest({
+      employeeId: user.id,
+      name:       user.name,
+      type:       'attendance_outside',
+      message:    `داواکاری ${actionLabel} لە دەرەوەی ئۆفیس — ${_pendingOutside.loc.distance} مەتر دوور`,
+      extra:      JSON.stringify({ action: _pendingOutside.action, distance: _pendingOutside.loc.distance })
+    });
+    if (res.success) {
+      Toast.success('داواکاری نێردرا ✅', 'چاوەڕێی مۆڵەتی ئەدمین بکە');
+      closeModal('outsideModal');
+      document.getElementById('statusText').textContent =
+        `⏳ چاوەڕێی مۆڵەت — ${actionLabel} لە دەرەوەی ئۆفیس`;
+    } else throw new Error(res.message);
+  } catch(e) {
+    Toast.error('نێردن سەرکەوتوو نەبوو', e.message);
+  } finally {
+    btn.disabled = false; btn.innerHTML = '📤 نێردنی داواکاری';
+    _pendingOutside = null;
   }
 }
 </script>
