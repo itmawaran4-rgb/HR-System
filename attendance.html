@@ -187,10 +187,25 @@ async function loadAttendanceHistory() {
   try {
     const res = await API.getAttendance({ employeeId: user.id });
     if (!res.success) throw new Error(res.message);
-    const records = res.data || [];
+    // Normalize field names (Google Sheets may return CheckIn or checkIn)
+    const records = (res.data || []).map(r => ({
+      ...r,
+      date:     r.date     || r.Date     || '',
+      checkIn:  r.checkIn  || r.CheckIn  || '',
+      checkOut: r.checkOut || r.CheckOut || '',
+      employeeId: r.employeeId || r.EmployeeID || r.employeeid || ''
+    }));
+
     const today = new Date().toISOString().split('T')[0];
-    todayRecord = records.find(r => r.date === today);
+    // Match by date (also handle cases where date has time component)
+    todayRecord = records.find(r => r.date && r.date.startsWith(today));
+    // If multiple records today, pick the latest one
+    if (!todayRecord) {
+      const todayRecords = records.filter(r => r.date && r.date.startsWith(today));
+      if (todayRecords.length) todayRecord = todayRecords[todayRecords.length - 1];
+    }
     updateTodayStatus(todayRecord);
+
     const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
     const tbody = document.getElementById('attHistoryBody');
     if (!sorted.length) {
@@ -198,7 +213,7 @@ async function loadAttendanceHistory() {
       return;
     }
     tbody.innerHTML = sorted.map(r => {
-      const complete = r.checkOut && r.checkOut !== '—';
+      const complete = r.checkOut && r.checkOut !== '—' && r.checkOut !== '';
       return `<tr>
         <td class="bold">${formatDate(r.date)}</td>
         <td><span class="badge badge-green">${r.checkIn || '—'}</span></td>
@@ -225,11 +240,15 @@ function updateTodayStatus(record) {
   const statusText  = document.getElementById('statusText');
   const todayCI     = document.getElementById('todayCheckIn');
   const todayCO     = document.getElementById('todayCheckOut');
-  if (!record) {
+
+  const hasCheckIn  = record && record.checkIn  && record.checkIn  !== '—' && record.checkIn  !== '';
+  const hasCheckOut = record && record.checkOut && record.checkOut !== '—' && record.checkOut !== '';
+
+  if (!record || !hasCheckIn) {
     checkInBtn.disabled = false; checkOutBtn.disabled = true;
     statusDot.className = 'status-dot'; statusText.textContent = 'ئەمڕۆ هێشتا نەهاتووەتەژوورەوە';
     todayCI.textContent = '—'; todayCO.textContent = '—';
-  } else if (record.checkIn && (!record.checkOut || record.checkOut === '—')) {
+  } else if (hasCheckIn && !hasCheckOut) {
     checkInBtn.disabled = true; checkOutBtn.disabled = false;
     statusDot.className = 'status-dot checked-in';
     statusText.textContent = `هاتوویتەژوورەوە لە ${record.checkIn}`;
