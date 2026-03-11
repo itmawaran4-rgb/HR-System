@@ -8,9 +8,9 @@
    ▌ CONFIGURATION — Set your Apps Script URL here
    ══════════════════════════════════════════════ */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbwi-KWk2zrm7XYLs_FsAHe9x4TxMLcL_yBEc2EG8_2Txe0NtHYRb3CfCrTvpMZIMEBH/exec',
-  APP_NAME: 'HR MAWARAN',
-  SESSION_KEY: 'hr_MAWARAN_session',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwwRk0HWR4a1cc_GHMWZhBsqt6IACH0z_vKXa5JU5iu3UR80aksb4c1Kxa7VEEpafNX/exec',
+  APP_NAME: 'HR Nexus',
+  SESSION_KEY: 'hr_nexus_session',
   VERSION: '1.0.0'
 };
 
@@ -61,24 +61,22 @@ const API = {
   async request(action, params = {}) {
     const url = new URL(CONFIG.API_URL);
     url.searchParams.set('action', action);
-    
+    // Encode data payload as JSON string in a param
     if (Object.keys(params).length > 0) {
       url.searchParams.set('payload', JSON.stringify(params));
     }
 
-    // تم إزالة الـ headers تماماً لأنها تسبب خطأ CORS مع جوجل
-    // تم إضافة redirect: 'follow' وهو ضروري جداً لجوجل سكريبت
     const response = await fetch(url.toString(), {
       method: 'GET',
-      mode: 'cors', // إضافة نمط الكورس
-      redirect: 'follow' 
+      redirect: 'follow'
     });
 
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   },
 
   /* ── Auth ── */
