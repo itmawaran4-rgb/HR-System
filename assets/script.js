@@ -68,21 +68,18 @@ const API = {
 
     const response = await fetch(url.toString(), {
       method: 'GET',
-      redirect: 'follow',
-      mode: 'cors'
+      redirect: 'follow'
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error('HTTP ' + response.status);
     }
-
-    // Handle GAS response (sometimes wrapped)
     const text = await response.text();
     try {
       return JSON.parse(text);
     } catch(e) {
-      console.error('GAS response (not JSON):', text.substring(0, 200));
-      throw new Error('Server returned invalid response. Check GAS deployment settings.');
+      console.error('Non-JSON response:', text.substring(0, 300));
+      throw new Error('Invalid response from server.');
     }
   },
 
