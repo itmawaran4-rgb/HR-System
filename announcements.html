@@ -1,10 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ckb" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR Nexus — Announcements</title>
+  <title>HR MAWARAN — ڕاگەیاندنەکان</title>
   <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .sidebar { right: 0; left: auto; transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-right: 260px; margin-left: 0; }
+    .topbar { flex-direction: row-reverse; }
+    .topbar-title { margin-right: 12px; margin-left: 0; }
+    .nav-item { flex-direction: row-reverse; text-align: right; }
+    .nav-icon { margin-right: 0; margin-left: 10px; }
+    .sidebar-header { flex-direction: row-reverse; }
+    .sidebar-user { text-align: right; }
+    .page-header { text-align: right; }
+    .card-header { flex-direction: row-reverse; }
+    .search-wrap { direction: rtl; }
+    @media(max-width:768px){
+      .sidebar{right:0;left:auto;transform:translateX(110%);}
+      .sidebar.open{transform:translateX(0);}
+      .main-content{margin-right:0;}
+    }
+    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+  </style>
 </head>
 <body>
 <div id="sidebarOverlay" class="sidebar-overlay"></div>
@@ -12,52 +36,54 @@
 <!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo-icon">🏢</div>
-    <div class="sidebar-logo-text">
-      <div class="brand-name">HR Nexus</div>
-      <div class="brand-sub">Employee Portal</div>
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text"><div class="brand-name">HR MAWARAN</div><div class="brand-sub">پۆرتاڵی کارمەند</div></div>
     </div>
   </div>
   <div class="sidebar-user">
-    <div class="sidebar-user-name" id="sidebarUserName">Loading...</div>
-    <div class="sidebar-user-role" id="sidebarUserRole">Employee</div>
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-section-label">Main Menu</div>
-    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> My Profile</a>
-    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> Attendance</a>
-    <a class="nav-item active" href="announcements.html"><span class="nav-icon">📢</span> Announcements</a>
-    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> My Salary</a>
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item active" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
+    <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn btn-ghost btn-block" data-logout>🚪 Logout</button>
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
   </div>
 </aside>
 
 <!-- Main Content -->
 <div class="main-content">
   <header class="topbar">
-    <button class="topbar-hamburger" id="hamburger">☰</button>
-    <span class="topbar-title">Announcements</span>
-    <div class="topbar-spacer"></div>
-    <span class="topbar-date" id="topbarDate"></span>
     <div class="topbar-avatar" id="topbarAvatar">?</div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-title">ڕاگەیاندنەکان</span>
+    <button class="topbar-hamburger" id="hamburger">☰</button>
   </header>
 
   <main class="page-content">
-    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div>
-        <h1 class="page-title">Company Announcements</h1>
-        <p class="page-subtitle">Stay up to date with the latest company news</p>
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;flex-direction:row-reverse">
+      <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 نوێکردنەوە</button>
+      <div style="text-align:right">
+        <h1 class="page-title">ڕاگەیاندنەکانی کۆمپانیا</h1>
+        <p class="page-subtitle">لە نوێترین هەواڵ و ئاگادارییەکان خەبەردار بە</p>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 Refresh</button>
     </div>
 
     <!-- Search bar -->
     <div style="margin-bottom:20px">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" class="form-control search-input" id="annSearchInput" placeholder="Search announcements...">
+        <input type="text" class="form-control search-input" id="annSearchInput" placeholder="گەڕان لە ڕاگەیاندنەکاندا...">
       </div>
     </div>
 
@@ -65,7 +91,7 @@
     <div id="annList">
       <div class="loading-rows">
         <div class="spinner" style="margin:0 auto 12px"></div>
-        Loading announcements...
+        ڕاگەیاندنەکان بارکراوەن...
       </div>
     </div>
   </main>
@@ -84,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadAnnouncements() {
   const listEl = document.getElementById('annList');
-  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading announcements...</div>`;
+  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>ڕاگەیاندنەکان بارکراوەن...</div>`;
 
   try {
     const res = await API.getAnnouncements();
@@ -97,7 +123,7 @@ async function loadAnnouncements() {
     listEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
-        <div class="empty-title">Failed to load announcements</div>
+        <div class="empty-title">ڕاگەیاندنەکان بارنەکرا</div>
         <div class="empty-desc">${e.message}</div>
       </div>`;
     Toast.error('Load Failed', e.message);
@@ -111,8 +137,8 @@ function renderAnnouncements(data) {
     listEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📢</div>
-        <div class="empty-title">No announcements yet</div>
-        <div class="empty-desc">Check back later for company updates</div>
+        <div class="empty-title">هیچ ڕاگەیاندنێک نیە</div>
+        <div class="empty-desc">دواتر دووبارە بگەڕێ بۆ نوێترین هەواڵەکان</div>
       </div>`;
     return;
   }
