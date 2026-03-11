@@ -62,7 +62,7 @@ const API = {
     const url = new URL(CONFIG.API_URL);
     url.searchParams.set('action', action);
     // Encode data payload as JSON string in a param
-    if (Object.keys(params).length > 0) {
+    if (params && Object.keys(params).length > 0) {
       url.searchParams.set('payload', JSON.stringify(params));
     }
 
