@@ -9,8 +9,8 @@
    ══════════════════════════════════════════════ */
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbwwRk0HWR4a1cc_GHMWZhBsqt6IACH0z_vKXa5JU5iu3UR80aksb4c1Kxa7VEEpafNX/exec',
-  APP_NAME: 'HR Nexus',
-  SESSION_KEY: 'hr_nexus_session',
+  APP_NAME: 'HR MAWARAN',
+  SESSION_KEY: 'hr_MAWARAN_session',
   VERSION: '1.0.0'
 };
 
