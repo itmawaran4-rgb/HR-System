@@ -1,5 +1,5 @@
 /**
- * HR NEXUS — script.js
+ * HR MAWARAN — script.js
  * Shared utilities, API communication, session management
  * Used by all employee-facing pages and admin panel
  */
@@ -9,8 +9,8 @@
    ══════════════════════════════════════════════ */
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbztH1hH9lr59kg5b_3HEpWTUi1hIJPTTP_cwaj8Kg_4bvkNPjhpKPgPzasQaAvpeJBK/exec',
-  APP_NAME: 'HR Nexus',
-  SESSION_KEY: 'hr_nexus_session',
+  APP_NAME: 'HR MAWARAN',
+  SESSION_KEY: 'hr_MAWARAN_session',
   VERSION: '1.0.0'
 };
 
