@@ -62,14 +62,15 @@ const API = {
     const url = new URL(CONFIG.API_URL);
     url.searchParams.set('action', action);
     
-    // Encode data payload as JSON string in a param
     if (Object.keys(params).length > 0) {
       url.searchParams.set('payload', JSON.stringify(params));
     }
 
-    // التعديل هنا: إزالة الـ headers وإضافة redirect
+    // تم إزالة الـ headers تماماً لأنها تسبب خطأ CORS مع جوجل
+    // تم إضافة redirect: 'follow' وهو ضروري جداً لجوجل سكريبت
     const response = await fetch(url.toString(), {
       method: 'GET',
+      mode: 'cors', // إضافة نمط الكورس
       redirect: 'follow' 
     });
 
@@ -77,8 +78,7 @@ const API = {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   },
 
   /* ── Auth ── */
