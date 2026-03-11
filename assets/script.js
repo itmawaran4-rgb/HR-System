@@ -61,13 +61,16 @@ const API = {
   async request(action, params = {}) {
     const url = new URL(CONFIG.API_URL);
     url.searchParams.set('action', action);
+    
     // Encode data payload as JSON string in a param
-    if (params && Object.keys(params).length > 0) {
+    if (Object.keys(params).length > 0) {
       url.searchParams.set('payload', JSON.stringify(params));
     }
 
+    // التعديل هنا: إزالة الـ headers وإضافة redirect
     const response = await fetch(url.toString(), {
-      method: 'GET'
+      method: 'GET',
+      redirect: 'follow' 
     });
 
     if (!response.ok) {
