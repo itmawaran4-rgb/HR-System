@@ -68,19 +68,15 @@ const API = {
 
     const response = await fetch(url.toString(), {
       method: 'GET',
-      redirect: 'follow'
+      headers: { 'Content-Type': 'application/json' }
     });
 
     if (!response.ok) {
-      throw new Error('HTTP ' + response.status);
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    const text = await response.text();
-    try {
-      return JSON.parse(text);
-    } catch(e) {
-      console.error('Non-JSON response:', text.substring(0, 300));
-      throw new Error('Invalid response from server.');
-    }
+
+    const data = await response.json();
+    return data;
   },
 
   /* ── Auth ── */
@@ -271,13 +267,7 @@ function debounce(fn, delay = 300) {
   };
 }
 
-/**
- * Show confirmation dialog (native)
- * @param {string} message
- */
-function confirm(message) {
-  return window.confirm(message);
-}
+// confirm() removed — use window.confirm() directly
 
 /* ══════════════════════════════════════════════
    ▌ SIDEBAR TOGGLE (mobile)
