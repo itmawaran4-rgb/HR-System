@@ -68,15 +68,19 @@ const API = {
 
     const response = await fetch(url.toString(), {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      redirect: 'follow'
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      throw new Error('HTTP ' + response.status);
     }
-
-    const data = await response.json();
-    return data;
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      console.error('Non-JSON from GAS:', text.substring(0, 200));
+      throw new Error('Invalid server response');
+    }
   },
 
   /* ── Auth ── */
@@ -267,7 +271,7 @@ function debounce(fn, delay = 300) {
   };
 }
 
-// confirm() removed — use window.confirm() directly
+
 
 /* ══════════════════════════════════════════════
    ▌ SIDEBAR TOGGLE (mobile)
