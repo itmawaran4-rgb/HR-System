@@ -796,7 +796,7 @@ async function deleteSalary(id) {
 
 
 /* ══════════════════════════════════════════════
-   ▌ REQUESTS — Leave + Outside Attendance
+   ▌ REQUESTS
    ══════════════════════════════════════════════ */
 let allRequests = [];
 let currentReqFilter = 'all';
@@ -804,7 +804,7 @@ let currentReqFilter = 'all';
 async function loadRequests() {
   const listEl = document.getElementById('requestsList');
   if (!listEl) return;
-  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading requests...</div>`;
+  listEl.innerHTML = '<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading...</div>';
 
   try {
     const res = await API.getRequests({});
@@ -821,21 +821,18 @@ async function loadRequests() {
     if (badge) badge.textContent = pending > 0 ? pending : '';
 
     renderRequests();
-
   } catch (e) {
-    listEl.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">⚠️</div>
-      <div class="empty-title">Failed to load requests</div>
-      <div class="empty-desc">${e.message}</div>
-    </div>`;
+    const listEl2 = document.getElementById('requestsList');
+    if (listEl2) listEl2.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Failed</div><div class="empty-desc">' + e.message + '</div></div>';
   }
 }
 
 function filterRequestsTab(filter) {
   currentReqFilter = filter;
-  document.getElementById('reqTabAll')?.classList.toggle('active', filter === 'all');
-  document.getElementById('reqTabLeave')?.classList.toggle('active', filter === 'leave');
-  document.getElementById('reqTabOutside')?.classList.toggle('active', filter === 'outside');
+  ['all','leave','outside'].forEach(f => {
+    const el = document.getElementById('reqTab' + f.charAt(0).toUpperCase() + f.slice(1));
+    if (el) el.classList.toggle('active', f === filter);
+  });
   renderRequests();
 }
 
@@ -844,81 +841,86 @@ function renderRequests() {
   if (!listEl) return;
 
   let filtered = allRequests;
-  if (currentReqFilter === 'leave') {
-    filtered = allRequests.filter(r => String(r.type || '').startsWith('leave'));
-  } else if (currentReqFilter === 'outside') {
-    filtered = allRequests.filter(r => String(r.type || '').includes('outside'));
-  }
+  if (currentReqFilter === 'leave')   filtered = allRequests.filter(r => String(r.type||'').startsWith('leave'));
+  if (currentReqFilter === 'outside') filtered = allRequests.filter(r => String(r.type||'').includes('outside'));
 
   if (!filtered.length) {
-    listEl.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📋</div>
-      <div class="empty-title">No requests found</div>
-      <div class="empty-desc">No requests match this filter</div>
-    </div>`;
+    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No requests</div></div>';
     return;
   }
 
-  const typeLabel = (type) => {
-    if (!type) return '—';
-    if (type.includes('annual'))    return '🌴 Annual Leave';
-    if (type.includes('sick'))      return '🏥 Sick Leave';
-    if (type.includes('emergency')) return '🚨 Emergency Leave';
-    if (type.includes('outside'))   return '📍 Outside Office';
-    if (type.includes('leave'))     return '🌴 Leave';
-    return type;
+  const typeLabel = t => {
+    if (!t) return '—';
+    if (t.includes('annual'))    return '🌴 Annual Leave';
+    if (t.includes('sick'))      return '🏥 Sick Leave';
+    if (t.includes('emergency')) return '🚨 Emergency Leave';
+    if (t.includes('outside'))   return '📍 Outside Office';
+    if (t.includes('leave'))     return '🌴 Leave';
+    return t;
   };
-
-  const statusBadge = (status) => {
-    if (status === 'approved') return '<span class="badge badge-green">✅ Approved</span>';
-    if (status === 'rejected') return '<span class="badge badge-muted" style="background:#f43f5e20;color:#f43f5e">❌ Rejected</span>';
+  const statusBadge = s => {
+    if (s === 'approved') return '<span class="badge badge-green">✅ Approved</span>';
+    if (s === 'rejected') return '<span class="badge badge-muted" style="background:#f43f5e20;color:#f43f5e">❌ Rejected</span>';
     return '<span class="badge badge-gold">⏳ Pending</span>';
   };
 
   listEl.innerHTML = filtered.map(r => {
+    // Debug: log the id to console
+    const rid = String(r.id || r.at || r.AT || '').trim();
     const isPending = r.status === 'pending';
     const borderColor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
     return `<div class="card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
       <div style="padding:16px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
           <div>
-            <div style="font-weight:700;font-size:15px">${escapeHtml(r.name || '—')}</div>
-            <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId || '')} &middot; ${r.date || ''}</div>
+            <div style="font-weight:700;font-size:15px">${escapeHtml(r.name||'—')}</div>
+            <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId||'')} · ${r.date||''}</div>
+            <div style="color:var(--text-muted);font-size:11px">ID: ${rid}</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             ${statusBadge(r.status)}
             <span class="badge badge-blue">${typeLabel(r.type)}</span>
           </div>
         </div>
-        <div style="color:var(--text-secondary);font-size:14px;margin-bottom:${isPending ? '12px' : '0'}">
-          ${escapeHtml(r.message || '—')}
+        <div style="color:var(--text-secondary);font-size:14px;margin-bottom:${isPending?'12px':'0'}">
+          ${escapeHtml(r.message||'—')}
         </div>
-        ${isPending ? `
+        ${isPending && rid ? `
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-primary btn-sm" onclick="approveReq('${r.id}')">✅ Approve</button>
-          <button class="btn btn-danger btn-sm" onclick="rejectReq('${r.id}')">❌ Reject</button>
-        </div>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="doApproveReq('${rid}')">✅ Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="doRejectReq('${rid}')">❌ Reject</button>
+        </div>` : (isPending ? '<div style="color:red;font-size:12px">⚠️ Missing request ID</div>' : '')}
       </div>
     </div>`;
   }).join('');
 }
 
-async function approveReq(id) {
+async function doApproveReq(id) {
+  if (!id) { Toast.error('Error', 'Missing request ID'); return; }
   if (!confirm('Approve this request?')) return;
   try {
+    Loader.show('Approving...');
     const res = await API.approveRequest({ id });
-    if (res.success) { Toast.success('Approved'); await loadRequests(); }
-    else throw new Error(res.message);
-  } catch (e) { Toast.error('Failed', e.message); }
+    if (res.success) { Toast.success('Approved ✅'); await loadRequests(); }
+    else throw new Error(res.message || JSON.stringify(res));
+  } catch (e) {
+    Toast.error('Failed', e.message);
+    console.error('approveRequest error:', e);
+  } finally { Loader.hide(); }
 }
 
-async function rejectReq(id) {
+async function doRejectReq(id) {
+  if (!id) { Toast.error('Error', 'Missing request ID'); return; }
   if (!confirm('Reject this request?')) return;
   try {
+    Loader.show('Rejecting...');
     const res = await API.rejectRequest({ id });
-    if (res.success) { Toast.warning('Rejected'); await loadRequests(); }
-    else throw new Error(res.message);
-  } catch (e) { Toast.error('Failed', e.message); }
+    if (res.success) { Toast.warning('Rejected ❌'); await loadRequests(); }
+    else throw new Error(res.message || JSON.stringify(res));
+  } catch (e) {
+    Toast.error('Failed', e.message);
+    console.error('rejectRequest error:', e);
+  } finally { Loader.hide(); }
 }
 
 /* ══════════════════════════════════════════════
