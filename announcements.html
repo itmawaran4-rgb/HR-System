@@ -10,24 +10,22 @@
   <link rel="apple-touch-icon" href="assets/icon.png">
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; }
-    .sidebar { right: 0; left: auto; transform: translateX(100%); }
-    .sidebar.open { transform: translateX(0); }
-    .main-content { margin-right: 260px; margin-left: 0; }
-    .topbar { flex-direction: row-reverse; }
-    .topbar-title { margin-right: 12px; margin-left: 0; }
-    .nav-item { flex-direction: row-reverse; text-align: right; }
-    .nav-icon { margin-right: 0; margin-left: 10px; }
-    .sidebar-header { flex-direction: row-reverse; }
-    .sidebar-user { text-align: right; }
-    .page-header { text-align: right; }
-    .card-header { flex-direction: row-reverse; }
-    .search-wrap { direction: rtl; }
+    .sidebar { right:0;left:auto;transform:translateX(100%); }
+    .sidebar.open { transform:translateX(0); }
+    .main-content { margin-right:260px;margin-left:0; }
+    .topbar { flex-direction:row-reverse; }
+    .topbar-title { margin-right:12px;margin-left:0; }
+    .nav-item { flex-direction:row-reverse;text-align:right; }
+    .nav-icon { margin-right:0;margin-left:10px; }
+    .sidebar-header { flex-direction:row-reverse; }
+    .sidebar-user { text-align:right; }
+    .page-header { text-align:right; }
     @media(max-width:768px){
       .sidebar{right:0;left:auto;transform:translateX(110%);}
       .sidebar.open{transform:translateX(0);}
       .main-content{margin-right:0;}
     }
-    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+    .company-logo-img{height:36px;width:auto;object-fit:contain;}
   </style>
 </head>
 <body>
@@ -71,19 +69,19 @@
   </header>
 
   <main class="page-content">
-    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;flex-direction:row-reverse">
-      <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 نوێکردنەوە</button>
-      <div style="text-align:right">
-        <h1 class="page-title">ڕاگەیاندنەکانی کۆمپانیا</h1>
-        <p class="page-subtitle">لە نوێترین هەواڵ و ئاگادارییەکان خەبەردار بە</p>
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 class="page-title">Company Announcements</h1>
+        <p class="page-subtitle">Stay up to date with the latest company news</p>
       </div>
+      <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 Refresh</button>
     </div>
 
     <!-- Search bar -->
     <div style="margin-bottom:20px">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" class="form-control search-input" id="annSearchInput" placeholder="گەڕان لە ڕاگەیاندنەکاندا...">
+        <input type="text" class="form-control search-input" id="annSearchInput" placeholder="Search announcements...">
       </div>
     </div>
 
@@ -91,7 +89,7 @@
     <div id="annList">
       <div class="loading-rows">
         <div class="spinner" style="margin:0 auto 12px"></div>
-        ڕاگەیاندنەکان بارکراوەن...
+        Loading announcements...
       </div>
     </div>
   </main>
@@ -110,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadAnnouncements() {
   const listEl = document.getElementById('annList');
-  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>ڕاگەیاندنەکان بارکراوەن...</div>`;
+  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading announcements...</div>`;
 
   try {
     const res = await API.getAnnouncements();
@@ -123,7 +121,7 @@ async function loadAnnouncements() {
     listEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
-        <div class="empty-title">ڕاگەیاندنەکان بارنەکرا</div>
+        <div class="empty-title">Failed to load announcements</div>
         <div class="empty-desc">${e.message}</div>
       </div>`;
     Toast.error('Load Failed', e.message);
@@ -137,8 +135,8 @@ function renderAnnouncements(data) {
     listEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📢</div>
-        <div class="empty-title">هیچ ڕاگەیاندنێک نیە</div>
-        <div class="empty-desc">دواتر دووبارە بگەڕێ بۆ نوێترین هەواڵەکان</div>
+        <div class="empty-title">No announcements yet</div>
+        <div class="empty-desc">Check back later for company updates</div>
       </div>`;
     return;
   }
