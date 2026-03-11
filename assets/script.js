@@ -8,7 +8,7 @@
    ▌ CONFIGURATION — Set your Apps Script URL here
    ══════════════════════════════════════════════ */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbwwRk0HWR4a1cc_GHMWZhBsqt6IACH0z_vKXa5JU5iu3UR80aksb4c1Kxa7VEEpafNX/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwi-KWk2zrm7XYLs_FsAHe9x4TxMLcL_yBEc2EG8_2Txe0NtHYRb3CfCrTvpMZIMEBH/exec',
   APP_NAME: 'HR MAWARAN',
   SESSION_KEY: 'hr_MAWARAN_session',
   VERSION: '1.0.0'
