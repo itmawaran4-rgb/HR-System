@@ -469,7 +469,7 @@ async function saveEmployee() {
 // DELETE employee
 async function deleteEmployee(id) {
   const emp = AdminState.employees.find(e => e.id === id);
-  if (!confirm(`Delete employee "${emp?.name || id}"? This cannot be undone.`)) return;
+  if (!window.confirm(`Delete employee "${emp?.name || id}"? This cannot be undone.`)) return;
 
   try {
     Loader.show('Deleting...');
@@ -638,7 +638,7 @@ async function saveAnnouncement() {
 }
 
 async function deleteAnnouncement(id) {
-  if (!confirm('Delete this announcement?')) return;
+  if (!window.confirm('Delete this announcement?')) return;
   try {
     Loader.show('Deleting...');
     const res = await API.deleteAnnouncement(id);
@@ -781,7 +781,7 @@ async function saveSalary() {
 }
 
 async function deleteSalary(id) {
-  if (!confirm('Delete this salary record?')) return;
+  if (!window.confirm('Delete this salary record?')) return;
   try {
     Loader.show('Deleting...');
     const res = await API.deleteSalaryRecord(id);
@@ -897,7 +897,7 @@ function renderRequests() {
 
 async function doApproveReq(id) {
   if (!id) { Toast.error('Error', 'Missing request ID'); return; }
-  if (!confirm('Approve this request?')) return;
+  if (!window.confirm('Approve this request?')) return;
   try {
     Loader.show('Approving...');
     const res = await API.approveRequest({ id });
@@ -911,7 +911,7 @@ async function doApproveReq(id) {
 
 async function doRejectReq(id) {
   if (!id) { Toast.error('Error', 'Missing request ID'); return; }
-  if (!confirm('Reject this request?')) return;
+  if (!window.confirm('Reject this request?')) return;
   try {
     Loader.show('Rejecting...');
     const res = await API.rejectRequest({ id });
