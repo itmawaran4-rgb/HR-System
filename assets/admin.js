@@ -793,6 +793,146 @@ async function deleteSalary(id) {
   }
 }
 
+
+/* ══════════════════════════════════════════════
+   ▌ REQUESTS — Leave + Outside Attendance
+   ══════════════════════════════════════════════ */
+let allRequests = [];
+let currentReqFilter = 'all';
+
+async function loadRequests() {
+  const listEl = document.getElementById('requestsList');
+  if (!listEl) return;
+  listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading requests...</div>`;
+
+  try {
+    const res = await API.getRequests({});
+    if (!res.success) throw new Error(res.message);
+
+    allRequests = (res.data || []).sort((a, b) => {
+      // Pending first
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (b.status === 'pending' && a.status !== 'pending') return 1;
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    // Update badge count
+    const pending = allRequests.filter(r => r.status === 'pending').length;
+    const badge = document.getElementById('pendingRequestsBadge');
+    if (badge) badge.textContent = pending > 0 ? pending : '';
+
+    renderRequests();
+
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">⚠️</div>
+      <div class="empty-title">Failed to load requests</div>
+      <div class="empty-desc">${e.message}</div>
+    </div>`;
+  }
+}
+
+function filterRequestsTab(filter) {
+  currentReqFilter = filter;
+  document.getElementById('reqTabAll')?.classList.toggle('active', filter === 'all');
+  document.getElementById('reqTabLeave')?.classList.toggle('active', filter === 'leave');
+  document.getElementById('reqTabOutside')?.classList.toggle('active', filter === 'outside');
+  renderRequests();
+}
+
+function renderRequests() {
+  const listEl = document.getElementById('requestsList');
+  if (!listEl) return;
+
+  let filtered = allRequests;
+  if (currentReqFilter === 'leave') {
+    filtered = allRequests.filter(r => String(r.type || '').startsWith('leave'));
+  } else if (currentReqFilter === 'outside') {
+    filtered = allRequests.filter(r => String(r.type || '').includes('outside'));
+  }
+
+  if (!filtered.length) {
+    listEl.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No requests found</div>
+      <div class="empty-desc">No requests match this filter</div>
+    </div>`;
+    return;
+  }
+
+  const typeLabel = (type) => {
+    if (!type) return '—';
+    if (type.includes('annual'))    return '🌴 Annual Leave';
+    if (type.includes('sick'))      return '🏥 Sick Leave';
+    if (type.includes('emergency')) return '🚨 Emergency Leave';
+    if (type.includes('outside'))   return '📍 Outside Office';
+    if (type.includes('leave'))     return '🌴 Leave';
+    return type;
+  };
+
+  const statusBadge = (status) => {
+    if (status === 'approved') return '<span class="badge badge-green">✅ Approved</span>';
+    if (status === 'rejected') return '<span class="badge badge-muted" style="background:#f43f5e20;color:#f43f5e">❌ Rejected</span>';
+    return '<span class="badge badge-gold">⏳ Pending</span>';
+  };
+
+  listEl.innerHTML = filtered.map(r => {
+    let extra = {};
+    try { extra = JSON.parse(r.extra || '{}'); } catch(e) {}
+    const isPending = r.status === 'pending';
+    const borderColor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
+
+    return `<div class="card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
+      <div style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-weight:700;font-size:15px">${escapeHtml(r.name || '—')}</div>
+            <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId || '')} · ${r.date || ''}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${statusBadge(r.status)}
+            <span class="badge badge-blue">${typeLabel(r.type)}</span>
+          </div>
+        </div>
+        <div style="color:var(--text-secondary);font-size:14px;margin-bottom:${isPending ? '12px' : '0'}">
+          ${escapeHtml(r.message || '—')}
+        </div>
+        ${isPending ? `
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary btn-sm" onclick="approveRequest('${r.id}')">✅ Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectRequest('${r.id}')">❌ Reject</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function approveRequest(id) {
+  if (!confirm('Approve this request?')) return;
+  try {
+    const res = await API.approveRequest({ id });
+    if (res.success) {
+      Toast.success('Approved', 'Request has been approved.');
+      await loadRequests();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Failed', e.message);
+  }
+}
+
+async function rejectRequest(id) {
+  if (!confirm('Reject this request?')) return;
+  try {
+    const res = await API.rejectRequest({ id });
+    if (res.success) {
+      Toast.warning('Rejected', 'Request has been rejected.');
+      await loadRequests();
+    } else throw new Error(res.message);
+  } catch (e) {
+    Toast.error('Failed', e.message);
+  }
+}
+
 /* ══════════════════════════════════════════════
    ▌ UTIL — Set inner HTML by element ID
    ══════════════════════════════════════════════ */
