@@ -66,7 +66,8 @@ function showAdminTab(tabId, loadFn) {
       loadSalary,
       loadReports,
       loadOverview,
-      populateSalaryEmployeeFilter
+      populateSalaryEmployeeFilter,
+      loadRequests
     };
     if (loaders[loadFn]) loaders[loadFn]();
   }
@@ -810,13 +811,11 @@ async function loadRequests() {
     if (!res.success) throw new Error(res.message);
 
     allRequests = (res.data || []).sort((a, b) => {
-      // Pending first
       if (a.status === 'pending' && b.status !== 'pending') return -1;
       if (b.status === 'pending' && a.status !== 'pending') return 1;
       return new Date(b.date) - new Date(a.date);
     });
 
-    // Update badge count
     const pending = allRequests.filter(r => r.status === 'pending').length;
     const badge = document.getElementById('pendingRequestsBadge');
     if (badge) badge.textContent = pending > 0 ? pending : '';
@@ -877,19 +876,16 @@ function renderRequests() {
   };
 
   listEl.innerHTML = filtered.map(r => {
-    let extra = {};
-    try { extra = JSON.parse(r.extra || '{}'); } catch(e) {}
     const isPending = r.status === 'pending';
     const borderColor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
-
     return `<div class="card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
       <div style="padding:16px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
           <div>
             <div style="font-weight:700;font-size:15px">${escapeHtml(r.name || '—')}</div>
-            <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId || '')} · ${r.date || ''}</div>
+            <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId || '')} &middot; ${r.date || ''}</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             ${statusBadge(r.status)}
             <span class="badge badge-blue">${typeLabel(r.type)}</span>
           </div>
@@ -899,38 +895,30 @@ function renderRequests() {
         </div>
         ${isPending ? `
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-primary btn-sm" onclick="approveRequest('${r.id}')">✅ Approve</button>
-          <button class="btn btn-danger btn-sm" onclick="rejectRequest('${r.id}')">❌ Reject</button>
+          <button class="btn btn-primary btn-sm" onclick="approveReq('${r.id}')">✅ Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectReq('${r.id}')">❌ Reject</button>
         </div>` : ''}
       </div>
     </div>`;
   }).join('');
 }
 
-async function approveRequest(id) {
+async function approveReq(id) {
   if (!confirm('Approve this request?')) return;
   try {
     const res = await API.approveRequest({ id });
-    if (res.success) {
-      Toast.success('Approved', 'Request has been approved.');
-      await loadRequests();
-    } else throw new Error(res.message);
-  } catch (e) {
-    Toast.error('Failed', e.message);
-  }
+    if (res.success) { Toast.success('Approved'); await loadRequests(); }
+    else throw new Error(res.message);
+  } catch (e) { Toast.error('Failed', e.message); }
 }
 
-async function rejectRequest(id) {
+async function rejectReq(id) {
   if (!confirm('Reject this request?')) return;
   try {
     const res = await API.rejectRequest({ id });
-    if (res.success) {
-      Toast.warning('Rejected', 'Request has been rejected.');
-      await loadRequests();
-    } else throw new Error(res.message);
-  } catch (e) {
-    Toast.error('Failed', e.message);
-  }
+    if (res.success) { Toast.warning('Rejected'); await loadRequests(); }
+    else throw new Error(res.message);
+  } catch (e) { Toast.error('Failed', e.message); }
 }
 
 /* ══════════════════════════════════════════════
