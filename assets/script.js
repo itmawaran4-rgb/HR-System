@@ -67,8 +67,7 @@ const API = {
     }
 
     const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      method: 'GET'
     });
 
     if (!response.ok) {
