@@ -187,11 +187,13 @@ function renderTodayAttendance() {
         : hasOut
           ? '<span class="badge badge-blue">Complete</span>'
           : '<span class="badge badge-gold">In Progress</span>';
+      const duration = (hasIn && hasOut) ? calcDuration(rec.checkIn, rec.checkOut) : '—';
       return `<tr style="cursor:pointer" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
         <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
         <td><span class="badge badge-blue">${escapeHtml(emp.department || '—')}</span></td>
         <td><span class="badge badge-green">${hasIn  ? rec.checkIn  : '—'}</span></td>
         <td><span class="badge ${hasOut ? 'badge-blue' : 'badge-muted'}">${hasOut ? rec.checkOut : '—'}</span></td>
+        <td>${duration !== '—' ? `<span class="badge badge-green" style="font-weight:700">${duration}</span>` : '<span class="badge badge-muted">—</span>'}</td>
         <td>${status}</td>
       </tr>`;
     });
@@ -199,7 +201,7 @@ function renderTodayAttendance() {
   setEl('todayPresentBadge', `${present} Present`);
   setEl('todayAbsentBadge',  `${absent} Absent`);
   tbody.innerHTML = rows.length ? rows.join('') :
-    `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No employees found</div></div></td></tr>`;
+    `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No employees found</div></div></td></tr>`;
 }
 
 function renderMonthlyReport() {
@@ -235,12 +237,25 @@ function renderMonthlyReport() {
       const avgIn  = inMins.length  ? Math.round(inMins.reduce((a,b)=>a+b,0)  / inMins.length)  : null;
       const avgOut = outMins.length ? Math.round(outMins.reduce((a,b)=>a+b,0) / outMins.length) : null;
 
+      // Average hours per worked day
+      const durations = recs
+        .filter(r => r.checkIn && r.checkOut)
+        .map(r => { const a = timeToMins(r.checkIn), b = timeToMins(r.checkOut); return (a!==null&&b!==null&&b>a) ? b-a : null; })
+        .filter(v => v !== null);
+      const avgDurMins = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0) / durations.length) : null;
+      const avgDurStr  = avgDurMins !== null ? `${Math.floor(avgDurMins/60)}h ${avgDurMins%60}m` : '—';
+      const totalMins  = durations.reduce((a,b)=>a+b,0);
+      const totalStr   = totalMins > 0 ? `${Math.floor(totalMins/60)}h ${totalMins%60}m` : '—';
+
       return `<tr style="cursor:pointer" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
         <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
         <td><span class="badge badge-blue">${escapeHtml(emp.department||'—')}</span></td>
         <td><span class="badge ${daysPresent>0?'badge-green':'badge-muted'}">${daysPresent} / ${workDays} days</span></td>
         <td>${avgIn  !== null ? minsToTime(avgIn)  : '—'}</td>
         <td>${avgOut !== null ? minsToTime(avgOut) : '—'}</td>
+        <td>${avgDurMins !== null
+          ? `<span class="badge badge-green" style="font-weight:700">${avgDurStr}</span><br><span class="text-muted" style="font-size:11px">Total: ${totalStr}</span>`
+          : '<span class="badge badge-muted">—</span>'}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEmpDetail('${escapeHtml(emp.id)}')">🔍 View</button></td>
       </tr>`;
     });
