@@ -54,7 +54,6 @@
     <a class="nav-item active" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
     <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
     <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
-    <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
   </nav>
   <div class="sidebar-footer">
     <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
@@ -141,19 +140,55 @@
 
 <!-- Outside Office Modal -->
 <div class="modal-overlay" id="outsideModal" style="display:none">
-  <div class="modal">
+  <div class="modal" style="max-width:440px">
     <div class="modal-header">
-      <div class="modal-title">⚠️ Outside Office Range</div>
+      <div class="modal-title">⚠️ دەرەوەی ئۆفیس</div>
       <button class="modal-close" onclick="closeModal('outsideModal')">×</button>
     </div>
-    <div style="padding:20px;text-align:center">
+
+    <!-- Step 1: Warning -->
+    <div id="outsideStep1" style="padding:20px;text-align:center">
       <div style="font-size:48px;margin-bottom:12px">📍</div>
-      <p id="outsideModalMsg" style="margin-bottom:16px;color:var(--text-muted)"></p>
-      <p style="color:var(--gold-500);font-weight:600">دەتوانیت داواکاری بنێریت بۆ مۆڵەتی ئەدمین</p>
+      <p id="outsideModalMsg" style="margin-bottom:12px;color:var(--text-muted);font-size:14px"></p>
+      <p style="color:var(--gold-500);font-weight:600;font-size:14px">دەتوانیت داواکاری بنێریت بۆ مۆڵەتی ئەدمین</p>
     </div>
+
+    <!-- Step 2: Note + Camera -->
+    <div id="outsideStep2" style="display:none;padding:0 20px 8px">
+      <div style="padding:12px;background:rgba(245,158,11,0.08);border-radius:8px;margin-bottom:16px;font-size:13px;color:var(--gold-500);text-align:right">
+        ⚠️ <span id="outsideStep2Msg"></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="text-align:right;display:block">
+          تێبینی / هۆکار <span style="color:#f43f5e">*</span>
+        </label>
+        <textarea class="form-control" id="outsideNote" rows="3"
+          placeholder="هۆکاری بوونت لە دەرەوەی ئۆفیس بنووسە..." style="text-align:right"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="text-align:right;display:block">
+          وێنەی شوێن <span style="color:#f43f5e">*</span>
+        </label>
+        <!-- Camera capture only (no gallery) -->
+        <input type="file" id="outsidePhoto" accept="image/*" capture="environment"
+          style="display:none" onchange="onPhotoSelected(event)">
+        <div id="photoPreview" style="border:2px dashed var(--border-color);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:var(--bg-secondary)"
+          onclick="document.getElementById('outsidePhoto').click()">
+          <div style="font-size:36px;margin-bottom:8px">📷</div>
+          <div style="color:var(--text-muted);font-size:13px">کامێرا بکەوە و وێنە بگرە</div>
+        </div>
+        <img id="photoThumb" style="display:none;width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">
+        <button id="retakeBtn" style="display:none;margin-top:8px" class="btn btn-secondary btn-sm btn-block"
+          onclick="retakePhoto()">🔄 دووبارە وێنە بگرە</button>
+      </div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('outsideModal')">❌ هەڵوەشاندنەوە</button>
-      <button class="btn btn-primary" id="outsideSendBtn" onclick="sendOutsideRequest()">📤 نێردنی داواکاری</button>
+      <!-- Step 1 button -->
+      <button class="btn btn-primary" id="outsideNextBtn" onclick="goToOutsideStep2()">داواکاری بنێرە →</button>
+      <!-- Step 2 button -->
+      <button class="btn btn-primary" id="outsideSendBtn" style="display:none" onclick="sendOutsideRequest()">📤 نێردنی داواکاری</button>
     </div>
   </div>
 </div>
@@ -340,7 +375,7 @@ async function doCheckIn() {
       _pendingOutside = { action: 'checkin', loc };
       document.getElementById('outsideModalMsg').textContent =
         `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
-      openModal('outsideModal');
+      openOutsideModal();
       return;
     }
     btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
@@ -375,7 +410,7 @@ async function doCheckOut() {
       _pendingOutside = { action: 'checkout', loc };
       document.getElementById('outsideModalMsg').textContent =
         `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
-      openModal('outsideModal');
+      openOutsideModal();
       return;
     }
     btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
@@ -401,21 +436,95 @@ async function doCheckOut() {
   }
 }
 
+// ── Outside Office: Step management ──
+let _outsidePhotoBase64 = null;
+
+function goToOutsideStep2() {
+  document.getElementById('outsideStep1').style.display = 'none';
+  document.getElementById('outsideStep2').style.display = 'block';
+  document.getElementById('outsideNextBtn').style.display = 'none';
+  document.getElementById('outsideSendBtn').style.display = 'inline-flex';
+  const msg = document.getElementById('outsideModalMsg').textContent;
+  document.getElementById('outsideStep2Msg').textContent = msg;
+  // Reset fields
+  document.getElementById('outsideNote').value = '';
+  _outsidePhotoBase64 = null;
+  document.getElementById('photoThumb').style.display = 'none';
+  document.getElementById('retakeBtn').style.display = 'none';
+  document.getElementById('photoPreview').style.display = 'block';
+}
+
+function onPhotoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _outsidePhotoBase64 = e.target.result; // full base64 data URL
+    document.getElementById('photoThumb').src = _outsidePhotoBase64;
+    document.getElementById('photoThumb').style.display = 'block';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('retakeBtn').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function retakePhoto() {
+  _outsidePhotoBase64 = null;
+  document.getElementById('outsidePhoto').value = '';
+  document.getElementById('photoThumb').style.display = 'none';
+  document.getElementById('retakeBtn').style.display = 'none';
+  document.getElementById('photoPreview').style.display = 'block';
+}
+
+// Reset modal to step 1 when opened
+function openOutsideModal() {
+  document.getElementById('outsideStep1').style.display = 'block';
+  document.getElementById('outsideStep2').style.display = 'none';
+  document.getElementById('outsideNextBtn').style.display = 'inline-flex';
+  document.getElementById('outsideSendBtn').style.display = 'none';
+  openOutsideModal();
+}
+
 async function sendOutsideRequest() {
   const user = Session.get();
   if (!_pendingOutside) return;
+
+  const note  = document.getElementById('outsideNote').value.trim();
+  if (!note) { Toast.warning('تێبینی', 'تکایە هۆکارەکە بنووسە'); return; }
+  if (!_outsidePhotoBase64) { Toast.warning('تێبینی', 'تکایە وێنەیەک بگرە'); return; }
+
   const btn = document.getElementById('outsideSendBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
+
   try {
     const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
+
+    // Upload photo to Google Drive via GAS
+    let photoUrl = '';
+    try {
+      const photoRes = await API.request('uploadPhoto', {
+        employeeId: user.id,
+        name:       user.name,
+        base64:     _outsidePhotoBase64,
+        filename:   `outside_${user.id}_${Date.now()}.jpg`
+      });
+      if (photoRes.success) photoUrl = photoRes.data.url;
+    } catch(e) { console.warn('Photo upload failed:', e); }
+
     const res = await API.addRequest({
       employeeId: user.id,
       name:       user.name,
       type:       'attendance_outside',
-      message:    `داواکاری ${actionLabel} لە دەرەوەی ئۆفیس — ${_pendingOutside.loc.distance} مەتر دوور`,
-      extra:      JSON.stringify({ action: _pendingOutside.action, distance: _pendingOutside.loc.distance })
+      message:    `داواکاری ${actionLabel} لە دەرەوەی ئۆفیس — ${_pendingOutside.loc.distance} مەتر دوور | ${note}`,
+      extra:      JSON.stringify({
+        action:   _pendingOutside.action,
+        distance: _pendingOutside.loc.distance,
+        note,
+        photoUrl
+      })
     });
+
     if (res.success) {
       Toast.success('داواکاری نێردرا ✅', 'چاوەڕێی مۆڵەتی ئەدمین بکە');
       closeModal('outsideModal');
