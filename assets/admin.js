@@ -93,40 +93,72 @@ function normDate(val) {
 }
 
 // ── Helper: parse time string or Date-based time ──
+// ── Robust time parser — handles all formats GAS/Sheets can return ──
 function normTime(val) {
   if (!val) return '';
-  const s = String(val);
-  const t = s.match(/(\d{2}:\d{2}:\d{2})/);
-  if (t) return t[1];
-  const d = new Date(s);
-  if (!isNaN(d)) {
-    return String(d.getHours()).padStart(2,'0') + ':' +
-           String(d.getMinutes()).padStart(2,'0') + ':' +
-           String(d.getSeconds()).padStart(2,'0');
+  const s = String(val).trim();
+  if (!s || s === 'null' || s === 'undefined') return '';
+
+  // Format 1: HH:mm:ss or H:mm:ss  (stored as text)
+  const t1 = s.match(/(\d{1,2}:\d{2}:\d{2})/);
+  if (t1) {
+    const parts = t1[1].split(':');
+    return parts[0].padStart(2,'0') + ':' + parts[1] + ':' + parts[2];
   }
-  return s;
+
+  // Format 2: HH:mm
+  const t2 = s.match(/^(\d{1,2}:\d{2})$/);
+  if (t2) {
+    const parts = t2[1].split(':');
+    return parts[0].padStart(2,'0') + ':' + parts[1] + ':00';
+  }
+
+  // Format 3: ISO string like "1899-12-30T05:30:00.000Z" (Sheets Date serial)
+  //           or full date string "Sat Dec 30 1899 08:30:00 GMT+0300"
+  // — extract HH:MM:SS portion (avoid matching timezone offset HH:MM)
+  const t3 = s.match(/T(\d{2}:\d{2}:\d{2})/);  // ISO format
+  if (t3) return t3[1];
+
+  // Format 4: any string containing HH:MM:SS (e.g. full Date.toString())
+  const t4 = s.match(/ (\d{2}:\d{2}:\d{2}) /);
+  if (t4) return t4[1];
+
+  // Format 5: decimal fraction of day (0.354166... = 08:30:00)
+  const num = parseFloat(s);
+  if (!isNaN(num) && num >= 0 && num < 1) {
+    const totalMins = Math.round(num * 24 * 60);
+    const h = Math.floor(totalMins / 60), m = totalMins % 60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00';
+  }
+
+  return '';
 }
 
-// ── Helper: time string to minutes since midnight ──
+// ── Helper: time string → minutes since midnight ──
 function timeToMins(t) {
   if (!t) return null;
-  const p = t.split(':');
-  if (p.length < 2) return null;
-  return parseInt(p[0])*60 + parseInt(p[1]);
+  const norm = normTime(t);
+  if (!norm) return null;
+  const p = norm.split(':');
+  const h = parseInt(p[0]), m = parseInt(p[1]);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
 }
 
-// ── Helper: minutes to HH:mm ──
+// ── Helper: minutes → HH:mm ──
 function minsToTime(m) {
-  if (m === null || m === undefined) return '—';
+  if (m === null || m === undefined || isNaN(m)) return '—';
   return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
 }
 
-// ── Helper: duration between two HH:mm:ss strings ──
+// ── Helper: duration between two time values ──
 function calcDuration(checkIn, checkOut) {
   const a = timeToMins(checkIn), b = timeToMins(checkOut);
-  if (a === null || b === null || b <= a) return '—';
-  const diff = b - a;
-  return `${Math.floor(diff/60)}h ${diff%60}m`;
+  if (a === null || b === null) return '—';
+  const diff = b > a ? b - a : (b + 24*60) - a; // handle midnight crossover
+  if (diff <= 0 || diff > 16*60) return '—';    // sanity: max 16h shift
+  const h = Math.floor(diff/60), m = diff % 60;
+  return h + 'h ' + (m > 0 ? m + 'm' : '');
 }
 
 async function loadOverview() {
