@@ -337,7 +337,7 @@ function requireAuth(adminOnly = false) {
     return null;
   }
   if (adminOnly && user.role !== 'admin') {
-    window.location.href = 'profile.html';
+    window.location.href = 'attendance.html';
     return null;
   }
   return user;
