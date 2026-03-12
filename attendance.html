@@ -461,16 +461,17 @@ function onPhotoSelected(event) {
   reader.onload = (e) => {
     const img = new Image();
     img.onload = () => {
-      // ضغط: max 800px عرض، جودة 70% JPEG
-      const MAX = 800;
+      // ضغط قوي: max 400px، جودة 55% → ~10-20KB للتخزين في Sheets
+      const MAX = 400;
       let w = img.width, h = img.height;
       if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+      if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
 
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 
-      _outsidePhotoBase64 = canvas.toDataURL('image/jpeg', 0.70);
+      _outsidePhotoBase64 = canvas.toDataURL('image/jpeg', 0.55);
       const kb = Math.round(_outsidePhotoBase64.length * 0.75 / 1024);
 
       document.getElementById('photoThumb').src = _outsidePhotoBase64;
@@ -516,36 +517,17 @@ async function sendOutsideRequest() {
   try {
     const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
 
-    // رفع الصورة إلى Google Drive عبر POST
-    let photoUrl = '';
-    try {
-      btn.innerHTML = '<span class="spinner spinner-sm"></span> وێنەکە بار دەکرێت...';
-      const photoRes = await API.uploadPhoto({
-        employeeId: user.id,
-        name:       user.name,
-        base64:     _outsidePhotoBase64,
-        filename:   `outside_${user.id}_${Date.now()}.jpg`
-      });
-      if (photoRes.success) {
-        photoUrl = photoRes.data.url;
-      } else {
-        console.warn('Photo upload failed:', photoRes.message);
-      }
-    } catch(e) {
-      console.warn('Photo upload error:', e.message);
-    }
-    btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
-
+    // تخزين الصورة مباشرة في Sheets (base64 مضغوط ~10-20KB)
     const res = await API.addRequest({
       employeeId: user.id,
       name:       user.name,
       type:       'attendance_outside',
       message:    `داواکاری ${actionLabel} لە دەرەوەی ئۆفیس — ${_pendingOutside.loc.distance} مەتر دوور | ${note}`,
       extra:      JSON.stringify({
-        action:   _pendingOutside.action,
-        distance: _pendingOutside.loc.distance,
+        action:      _pendingOutside.action,
+        distance:    _pendingOutside.loc.distance,
         note,
-        photoUrl
+        photoBase64: _outsidePhotoBase64
       })
     });
 
