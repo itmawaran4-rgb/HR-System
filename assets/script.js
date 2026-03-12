@@ -144,7 +144,6 @@ const API = {
   async approveRequest(data)          { return this.request('approveRequest', data); },
   async rejectRequest(data)           { return this.request('rejectRequest', data); },
 
-  /* ── Photo Upload (uses POST to handle large base64) ── */
   async uploadPhoto(data) {
     const url = new URL(CONFIG.API_URL);
     url.searchParams.set('action', 'uploadPhoto');
@@ -155,8 +154,7 @@ const API = {
     });
     if (!response.ok) throw new Error('HTTP ' + response.status);
     const text = await response.text();
-    try { return JSON.parse(text); }
-    catch(e) { throw new Error('Invalid response'); }
+    try { return JSON.parse(text); } catch(e) { throw new Error('Invalid response'); }
   }
 };
 
@@ -280,7 +278,7 @@ function debounce(fn, delay = 300) {
   };
 }
 
-
+/* confirm() removed to prevent infinite loop */
 
 /* ══════════════════════════════════════════════
    ▌ SIDEBAR TOGGLE (mobile)
