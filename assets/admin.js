@@ -887,12 +887,14 @@ function renderRequests() {
           ${escapeHtml(r.message||'—')}
         </div>
         ${extra.note ? `<div style="font-size:13px;background:rgba(245,158,11,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:var(--text-primary)">📝 ${escapeHtml(extra.note)}</div>` : ''}
-        ${extra.photoUrl ? `
+        ${(extra.photoBase64 || extra.photoUrl) ? `
         <div style="margin-bottom:12px">
-          <a href="${extra.photoUrl}" target="_blank" title="کلیک بکە بۆ گەورەکردن">
-            <img src="${extra.photoUrl}" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);cursor:pointer"
-              onerror="this.parentElement.innerHTML='<div style=\'font-size:13px;color:var(--text-muted)\'>📷 وێنەکە بەردەست نیە</div>'">
-          </a>
+          <img src="${extra.photoBase64 || extra.photoUrl}"
+            style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);cursor:pointer"
+            onclick="window.open(this.src,'_blank')"
+            title="کلیک بکە بۆ گەورەکردن"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+          <div style="display:none;font-size:13px;color:var(--text-muted);padding:8px">📷 وێنەکە بەردەست نیە</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">📷 وێنەی شوێن — کلیک بکە بۆ گەورەکردن</div>
         </div>` : ''}
         ${isPending && rid ? `
