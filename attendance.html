@@ -459,11 +459,27 @@ function onPhotoSelected(event) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
-    _outsidePhotoBase64 = e.target.result; // full base64 data URL
-    document.getElementById('photoThumb').src = _outsidePhotoBase64;
-    document.getElementById('photoThumb').style.display = 'block';
-    document.getElementById('photoPreview').style.display = 'none';
-    document.getElementById('retakeBtn').style.display = 'block';
+    const img = new Image();
+    img.onload = () => {
+      // ضغط: max 800px عرض، جودة 70% JPEG
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+      _outsidePhotoBase64 = canvas.toDataURL('image/jpeg', 0.70);
+      const kb = Math.round(_outsidePhotoBase64.length * 0.75 / 1024);
+
+      document.getElementById('photoThumb').src = _outsidePhotoBase64;
+      document.getElementById('photoThumb').style.display = 'block';
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('retakeBtn').style.display = 'block';
+      document.getElementById('retakeBtn').textContent = `🔄 دووبارە وێنە بگرە (~${kb}KB)`;
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -500,17 +516,25 @@ async function sendOutsideRequest() {
   try {
     const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
 
-    // Upload photo to Google Drive via GAS
+    // رفع الصورة إلى Google Drive عبر POST
     let photoUrl = '';
     try {
-      const photoRes = await API.request('uploadPhoto', {
+      btn.innerHTML = '<span class="spinner spinner-sm"></span> وێنەکە بار دەکرێت...';
+      const photoRes = await API.uploadPhoto({
         employeeId: user.id,
         name:       user.name,
         base64:     _outsidePhotoBase64,
         filename:   `outside_${user.id}_${Date.now()}.jpg`
       });
-      if (photoRes.success) photoUrl = photoRes.data.url;
-    } catch(e) { console.warn('Photo upload failed:', e); }
+      if (photoRes.success) {
+        photoUrl = photoRes.data.url;
+      } else {
+        console.warn('Photo upload failed:', photoRes.message);
+      }
+    } catch(e) {
+      console.warn('Photo upload error:', e.message);
+    }
+    btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
 
     const res = await API.addRequest({
       employeeId: user.id,
