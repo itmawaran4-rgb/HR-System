@@ -8,7 +8,7 @@
    ▌ CONFIGURATION — Set your Apps Script URL here
    ══════════════════════════════════════════════ */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbx0hcRDkHwwjO37Yn5zrlHpTP8TDIzSmFOZV5ILLlAFsoQeM4_z5HEakieMjoBdFNa3/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzqIld3f7DfNOLX5iJEINcj6XxEIt5OSwN75uJGCpT-27Og1WC_mDVilpH4Nuur0aeH/exec',
   APP_NAME: 'HR Nexus',
   SESSION_KEY: 'hr_nexus_session',
   VERSION: '1.0.0'
@@ -142,7 +142,22 @@ const API = {
   async getRequests(filters = {})     { return this.request('getRequests', filters); },
   async addRequest(data)              { return this.request('addRequest', data); },
   async approveRequest(data)          { return this.request('approveRequest', data); },
-  async rejectRequest(data)           { return this.request('rejectRequest', data); }
+  async rejectRequest(data)           { return this.request('rejectRequest', data); },
+
+  /* ── Photo Upload (uses POST to handle large base64) ── */
+  async uploadPhoto(data) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.set('action', 'uploadPhoto');
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const text = await response.text();
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error('Invalid response'); }
+  }
 };
 
 /* ══════════════════════════════════════════════
