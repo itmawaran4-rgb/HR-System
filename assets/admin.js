@@ -867,6 +867,8 @@ function renderRequests() {
   listEl.innerHTML = filtered.map(r => {
     // Debug: log the id to console
     const rid = String(r.id || r.at || r.AT || '').trim();
+    let extra = {};
+    try { extra = JSON.parse(r.extra || '{}'); } catch(e) {}
     const isPending = r.status === 'pending';
     const borderColor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
     return `<div class="card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
@@ -875,16 +877,24 @@ function renderRequests() {
           <div>
             <div style="font-weight:700;font-size:15px">${escapeHtml(r.name||'—')}</div>
             <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId||'')} · ${r.date||''}</div>
-            <div style="color:var(--text-muted);font-size:11px">ID: ${rid}</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             ${statusBadge(r.status)}
             <span class="badge badge-blue">${typeLabel(r.type)}</span>
           </div>
         </div>
-        <div style="color:var(--text-secondary);font-size:14px;margin-bottom:${isPending?'12px':'0'}">
+        <div style="color:var(--text-secondary);font-size:14px;margin-bottom:10px">
           ${escapeHtml(r.message||'—')}
         </div>
+        ${extra.note ? `<div style="font-size:13px;background:rgba(245,158,11,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:var(--text-primary)">📝 ${escapeHtml(extra.note)}</div>` : ''}
+        ${extra.photoUrl ? `
+        <div style="margin-bottom:12px">
+          <a href="${extra.photoUrl}" target="_blank" title="کلیک بکە بۆ گەورەکردن">
+            <img src="${extra.photoUrl}" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);cursor:pointer"
+              onerror="this.parentElement.innerHTML='<div style=\'font-size:13px;color:var(--text-muted)\'>📷 وێنەکە بەردەست نیە</div>'">
+          </a>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">📷 وێنەی شوێن — کلیک بکە بۆ گەورەکردن</div>
+        </div>` : ''}
         ${isPending && rid ? `
         <div style="display:flex;gap:8px;margin-top:10px">
           <button class="btn btn-primary btn-sm" onclick="doApproveReq('${rid}')">✅ Approve</button>
