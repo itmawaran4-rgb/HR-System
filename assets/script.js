@@ -71,16 +71,10 @@ const API = {
       redirect: 'follow'
     });
 
-    if (!response.ok) {
-      throw new Error('HTTP ' + response.status);
-    }
+    if (!response.ok) throw new Error('HTTP ' + response.status);
     const text = await response.text();
-    try {
-      return JSON.parse(text);
-    } catch(e) {
-      console.error('Non-JSON from GAS:', text.substring(0, 200));
-      throw new Error('Invalid server response');
-    }
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error('Invalid server response'); }
   },
 
   /* ── Auth ── */
