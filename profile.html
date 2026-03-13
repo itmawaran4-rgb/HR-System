@@ -1,443 +1,168 @@
-/**
- * HR NEXUS — script.js
- * Shared utilities, API communication, session management
- * Used by all employee-facing pages and admin panel
- */
-
-/* ══════════════════════════════════════════════
-   ▌ CONFIGURATION — Set your Apps Script URL here
-   ══════════════════════════════════════════════ */
-const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbylg9InrYGpYgPNj_d-xW8Rly6tYB8cv8m_LTh7xC-7xHy3Bxkfal2KxI-j4eMcf3A/exec',
-  APP_NAME: 'HR Nexus',
-  SESSION_KEY: 'hr_nexus_session',
-  VERSION: '1.0.0'
-};
-
-/* ══════════════════════════════════════════════
-   ▌ SESSION MANAGEMENT
-   ══════════════════════════════════════════════ */
-const Session = {
-  /**
-   * Save user session to localStorage
-   * @param {Object} user - User data object
-   */
-  set(user) {
-    localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(user));
-  },
-
-  /** Get current session user */
-  get() {
-    const raw = localStorage.getItem(CONFIG.SESSION_KEY);
-    try { return raw ? JSON.parse(raw) : null; }
-    catch { return null; }
-  },
-
-  /** Clear session (logout) */
-  clear() {
-    localStorage.removeItem(CONFIG.SESSION_KEY);
-  },
-
-  /** Check if user is logged in */
-  isLoggedIn() {
-    return !!this.get();
-  },
-
-  /** Check if current user is admin */
-  isAdmin() {
-    const u = this.get();
-    return u && u.role === 'admin';
-  }
-};
-
-/* ══════════════════════════════════════════════
-   ▌ API LAYER — Google Apps Script communication
-   ══════════════════════════════════════════════ */
-const API = {
-  /**
-   * Generic fetch wrapper for Google Apps Script
-   * GAS requires GET for CORS — we encode action & payload in URL params
-   */
-  async request(action, params = {}) {
-    const url = new URL(CONFIG.API_URL);
-    url.searchParams.set('action', action);
-    // Encode data payload as JSON string in a param
-    if (Object.keys(params).length > 0) {
-      url.searchParams.set('payload', JSON.stringify(params));
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR MAWARAN — پرۆفایلەکەم</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .sidebar { right: 0; left: auto; transform: translateX(100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-content { margin-right: 260px; margin-left: 0; }
+    .topbar { flex-direction: row-reverse; }
+    .topbar-title { margin-right: 12px; margin-left: 0; }
+    .nav-item { flex-direction: row-reverse; text-align: right; }
+    .nav-icon { margin-right: 0; margin-left: 10px; }
+    .sidebar-header { flex-direction: row-reverse; }
+    .sidebar-user { text-align: right; }
+    .page-header { text-align: right; }
+    .profile-hero { flex-direction: row-reverse; }
+    .profile-info { text-align: right; }
+    .profile-tags { flex-direction: row-reverse; }
+    .card-header { flex-direction: row-reverse; }
+    .card-title { flex-direction: row-reverse; }
+    .profile-field { flex-direction: row-reverse; text-align: right; }
+    @media (max-width: 768px) {
+      .sidebar { right: 0; left: auto; transform: translateX(110%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-right: 0; }
     }
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      redirect: 'follow'
-    });
-
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const text = await response.text();
-    try { return JSON.parse(text); }
-    catch(e) { throw new Error('Invalid server response'); }
-  },
-
-  /* ── Auth ── */
-  async login(id, password, role) {
-    return this.request('login', { id, password, role });
-  },
-
-  /* ── Employees ── */
-  async getEmployees() {
-    return this.request('getEmployees');
-  },
-  async addEmployee(data) {
-    return this.request('addEmployee', data);
-  },
-  async updateEmployee(data) {
-    return this.request('updateEmployee', data);
-  },
-  async deleteEmployee(id) {
-    return this.request('deleteEmployee', { id });
-  },
-
-  /* ── Attendance ── */
-  async checkIn(employeeId, name) {
-    return this.request('checkIn', { employeeId, name });
-  },
-  async checkOut(employeeId, name) {
-    return this.request('checkOut', { employeeId, name });
-  },
-  async getAttendance(filters = {}) {
-    return this.request('getAttendance', filters);
-  },
-
-  /* ── Announcements ── */
-  async getAnnouncements() {
-    return this.request('getAnnouncements');
-  },
-  async addAnnouncement(data) {
-    return this.request('addAnnouncement', data);
-  },
-  async updateAnnouncement(data) {
-    return this.request('updateAnnouncement', data);
-  },
-  async deleteAnnouncement(id) {
-    return this.request('deleteAnnouncement', { id });
-  },
-
-  /* ── Salary ── */
-  async getSalary(employeeId = null) {
-    return this.request('getSalary', employeeId ? { employeeId } : {});
-  },
-  async addSalaryRecord(data) {
-    return this.request('addSalaryRecord', data);
-  },
-  async updateSalaryRecord(data) {
-    return this.request('updateSalaryRecord', data);
-  },
-  async deleteSalaryRecord(id) {
-    return this.request('deleteSalaryRecord', { id });
-  },
-
-  /* ── Reports ── */
-  async getStats()                    { return this.request('getStats'); },
-
-  /* ── Requests (Leave + Outside Attendance) ── */
-  async getRequests(filters = {})     { return this.request('getRequests', filters); },
-  async addRequest(data)              { return this.request('addRequest', data); },
-  async approveRequest(data)          { return this.request('approveRequest', data); },
-  async rejectRequest(data)           { return this.request('rejectRequest', data); },
-
-  async uploadPhoto(data) {
-    const url = new URL(CONFIG.API_URL);
-    url.searchParams.set('action', 'uploadPhoto');
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const text = await response.text();
-    try { return JSON.parse(text); } catch(e) { throw new Error('Invalid response'); }
-  }
-};
-
-/* ══════════════════════════════════════════════
-   ▌ TOAST NOTIFICATIONS
-   ══════════════════════════════════════════════ */
-const Toast = {
-  container: null,
-
-  init() {
-    if (!this.container) {
-      this.container = document.createElement('div');
-      this.container.className = 'toast-container';
-      document.body.appendChild(this.container);
-    }
-  },
-
-  show(title, message = '', type = 'info', duration = 4000) {
-    this.init();
-    const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-      <span class="toast-icon">${icons[type] || icons.info}</span>
-      <div>
-        <div class="toast-title">${title}</div>
-        ${message ? `<div class="toast-body">${message}</div>` : ''}
+    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+  </style>
+</head>
+<body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="brand-name">HR MAWARAN</div>
+        <div class="brand-sub">پۆرتاڵی کارمەند</div>
       </div>
-      <button class="toast-dismiss" onclick="this.closest('.toast').remove()">×</button>
-    `;
-    this.container.appendChild(toast);
-    if (duration > 0) {
-      setTimeout(() => toast.remove(), duration);
-    }
-  },
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
+    <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
+  </div>
+</aside>
 
-  success(title, msg)  { this.show(title, msg, 'success'); },
-  error(title, msg)    { this.show(title, msg, 'error'); },
-  info(title, msg)     { this.show(title, msg, 'info'); },
-  warning(title, msg)  { this.show(title, msg, 'warning'); }
-};
+<div class="main-content">
+  <header class="topbar">
+    <div class="topbar-avatar" id="topbarAvatar">?</div>
+    <span class="topbar-date" id="topbarDate"></span>
+    <div class="topbar-spacer"></div>
+    <span class="topbar-title">پرۆفایلەکەم</span>
+    <button class="topbar-hamburger" id="hamburger">☰</button>
+  </header>
+  <main class="page-content">
+    <div class="page-header">
+      <h1 class="page-title">پرۆفایلی کارمەند</h1>
+      <p class="page-subtitle">زانیاری کەسی و کارەکەت</p>
+    </div>
+    <div id="profileLoading" style="text-align:center;padding:60px">
+      <div class="spinner" style="margin:0 auto 12px"></div>
+      <div class="text-muted">پرۆفایلەکەت بارکراوە...</div>
+    </div>
+    <div id="profileContent" style="display:none">
+      <div class="profile-hero">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div class="profile-info">
+          <div class="profile-name" id="profileName">—</div>
+          <div class="profile-pos" id="profilePosition">—</div>
+          <div class="profile-tags">
+            <span class="badge badge-blue" id="profileDept">—</span>
+            <span class="badge badge-gold" id="profileId">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="card-title-icon blue">📋</div>
+            زانیاری کەسی
+          </div>
+        </div>
+        <div class="profile-grid">
+          <div class="profile-field">
+            <div class="field-icon">🆔</div>
+            <div><div class="field-label">ناسنامەی کارمەند</div><div class="field-value" id="detailId">—</div></div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">🏢</div>
+            <div><div class="field-label">بەش</div><div class="field-value" id="detailDept">—</div></div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">💼</div>
+            <div><div class="field-label">پۆستە</div><div class="field-value" id="detailPos">—</div></div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">📞</div>
+            <div><div class="field-label">تەلەفۆن</div><div class="field-value" id="detailPhone">—</div></div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">✉️</div>
+            <div><div class="field-label">ئیمەیل</div><div class="field-value" id="detailEmail">—</div></div>
+          </div>
+          <div class="profile-field">
+            <div class="field-icon">📅</div>
+            <div><div class="field-label">بەرواری دەستپێکردن</div><div class="field-value" id="detailHire">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
 
-/* ══════════════════════════════════════════════
-   ▌ LOADING OVERLAY
-   ══════════════════════════════════════════════ */
-const Loader = {
-  overlay: null,
-
-  show(text = 'Loading...') {
-    if (!this.overlay) {
-      this.overlay = document.createElement('div');
-      this.overlay.className = 'loading-overlay';
-      this.overlay.innerHTML = `
-        <div class="spinner"></div>
-        <div class="loading-text" id="loaderText">${text}</div>
-      `;
-      document.body.appendChild(this.overlay);
-    } else {
-      document.getElementById('loaderText').textContent = text;
-      this.overlay.style.display = 'flex';
-    }
-  },
-
-  hide() {
-    if (this.overlay) {
-      this.overlay.style.display = 'none';
-    }
-  }
-};
-
-/* ══════════════════════════════════════════════
-   ▌ UI HELPERS
-   ══════════════════════════════════════════════ */
-
-/**
- * Format date to DD/MM/YYYY
- * @param {string|Date} date
- */
-function formatDate(date) {
-  if (!date) return '—';
-  const d = new Date(date);
-  if (isNaN(d)) return date;
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-/**
- * Format currency
- * @param {number} amount
- */
-function formatCurrency(amount) {
-  const n = parseFloat(amount) || 0;
-  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-}
-
-/**
- * Get user initials from full name
- * @param {string} name
- */
-function getInitials(name = '') {
-  return name.split(' ').slice(0, 2).map(n => n[0]?.toUpperCase()).join('') || '?';
-}
-
-/**
- * Escape HTML to prevent XSS
- * @param {string} str
- */
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = String(str ?? '');
-  return div.innerHTML;
-}
-
-/**
- * Debounce function
- */
-function debounce(fn, delay = 300) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
-
-/* confirm() removed to prevent infinite loop */
-
-/* ══════════════════════════════════════════════
-   ▌ SIDEBAR TOGGLE (mobile)
-   ══════════════════════════════════════════════ */
-function initSidebar() {
-  const hamburger = document.getElementById('hamburger');
-  const sidebar   = document.getElementById('sidebar');
-  const overlay   = document.getElementById('sidebarOverlay');
-
-  if (!hamburger || !sidebar) return;
-
-  hamburger.addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('show');
-  });
-
-  if (overlay) {
-    overlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('show');
-    });
-  }
-
-  // Close on nav item click (mobile)
-  document.querySelectorAll('.nav-item[href]').forEach(item => {
-    item.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay?.classList.remove('show');
-    });
-  });
-}
-
-/* ══════════════════════════════════════════════
-   ▌ LIVE CLOCK
-   ══════════════════════════════════════════════ */
-function startClock(clockId, dateId) {
-  function update() {
-    const now = new Date();
-    const clockEl = document.getElementById(clockId);
-    const dateEl  = document.getElementById(dateId);
-    if (clockEl) {
-      clockEl.textContent = now.toLocaleTimeString('en-US', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-      });
-    }
-    if (dateEl) {
-      dateEl.textContent = now.toLocaleDateString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      });
-    }
-  }
-  update();
-  setInterval(update, 1000);
-}
-
-/* ══════════════════════════════════════════════
-   ▌ AUTH GUARD — Redirect if not logged in
-   ══════════════════════════════════════════════ */
-function requireAuth(adminOnly = false) {
-  const user = Session.get();
-  if (!user) {
-    window.location.href = 'index.html';
-    return null;
-  }
-  if (adminOnly && user.role !== 'admin') {
-    window.location.href = 'attendance.html';
-    return null;
-  }
-  return user;
-}
-
-/**
- * Populate sidebar user info
- */
-function populateSidebarUser() {
-  const user = Session.get();
+<script src="assets/script.js?v=3"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = requireAuth(false);
   if (!user) return;
-
-  const nameEl = document.getElementById('sidebarUserName');
-  const roleEl = document.getElementById('sidebarUserRole');
-  const avatarEl = document.getElementById('topbarAvatar');
-
-  if (nameEl) nameEl.textContent = user.name || user.id;
-  if (roleEl) roleEl.textContent = user.role === 'admin' ? 'HR Admin' : user.department || 'Employee';
-  if (avatarEl) avatarEl.textContent = getInitials(user.name || user.id);
-}
-
-/* ══════════════════════════════════════════════
-   ▌ LOGOUT
-   ══════════════════════════════════════════════ */
-function logout() {
-  if (window.confirm('Are you sure you want to logout?')) {
-    Session.clear();
-    window.location.href = 'index.html';
-  }
-}
-
-/* ══════════════════════════════════════════════
-   ▌ MODAL HELPERS
-   ══════════════════════════════════════════════ */
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'flex';
-}
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = 'none';
-}
-
-// Close modal on overlay click
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('modal-overlay')) {
-    e.target.style.display = 'none';
-  }
-});
-
-// Close modal on Escape key
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
-  }
-});
-
-/* ══════════════════════════════════════════════
-   ▌ UPDATE TOPBAR DATE
-   ══════════════════════════════════════════════ */
-function updateTopbarDate() {
-  const el = document.getElementById('topbarDate');
-  if (el) {
-    el.textContent = new Date().toLocaleDateString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric'
-    });
-  }
-}
-
-/* ══════════════════════════════════════════════
-   ▌ MARK ACTIVE NAV ITEM
-   ══════════════════════════════════════════════ */
-function markActiveNav() {
-  const current = window.location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.nav-item').forEach(item => {
-    const href = item.getAttribute('href');
-    if (href && href === current) {
-      item.classList.add('active');
+  try {
+    const res = await API.getEmployees();
+    let emp = user;
+    if (res.success && res.data) {
+      const found = res.data.find(e => e.id === user.id);
+      if (found) emp = { ...found, role: user.role };
     }
-  });
-}
-
-/* ══════════════════════════════════════════════
-   ▌ GLOBAL INIT on DOMContentLoaded
-   ══════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  initSidebar();
-  updateTopbarDate();
-  markActiveNav();
-  populateSidebarUser();
-
-  // Logout buttons
-  document.querySelectorAll('[data-logout]').forEach(btn => {
-    btn.addEventListener('click', logout);
-  });
+    document.getElementById('profileLoading').style.display = 'none';
+    document.getElementById('profileContent').style.display = 'block';
+    const initials = getInitials(emp.name);
+    document.getElementById('profileAvatar').textContent  = initials;
+    document.getElementById('profileName').textContent    = emp.name || '—';
+    document.getElementById('profilePosition').textContent = emp.position || '—';
+    document.getElementById('profileDept').textContent    = emp.department || '—';
+    document.getElementById('profileId').textContent      = `ناسنامە: ${emp.id}`;
+    document.getElementById('detailId').textContent    = emp.id;
+    document.getElementById('detailDept').textContent  = emp.department || '—';
+    document.getElementById('detailPos').textContent   = emp.position || '—';
+    document.getElementById('detailPhone').textContent = emp.phone || '—';
+    document.getElementById('detailEmail').textContent = emp.email || '—';
+    document.getElementById('detailHire').textContent  = formatDate(emp.hireDate);
+  } catch (e) {
+    document.getElementById('profileLoading').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">هەڵە لە بارکردنی پرۆفایل</div><div class="empty-desc">${e.message}</div></div>`;
+  }
 });
+</script>
+</body>
+</html>
