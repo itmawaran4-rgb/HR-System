@@ -1,550 +1,443 @@
-<!DOCTYPE html>
-<html lang="ckb" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR MAWARAN — ئامادەبوون</title>
-  <link rel="stylesheet" href="assets/style.css">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#f59e0b">
-  <link rel="apple-touch-icon" href="assets/icon.png">
-  <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; }
-    .sidebar { right: 0; left: auto; transform: translateX(100%); }
-    .sidebar.open { transform: translateX(0); }
-    .main-content { margin-right: 260px; margin-left: 0; }
-    .topbar { flex-direction: row-reverse; }
-    .topbar-title { margin-right: 12px; margin-left: 0; }
-    .nav-item { flex-direction: row-reverse; text-align: right; }
-    .nav-icon { margin-right: 0; margin-left: 10px; }
-    .sidebar-header { flex-direction: row-reverse; }
-    .sidebar-user { text-align: right; }
-    .page-header { text-align: right; }
-    .card-header { flex-direction: row-reverse; }
-    .card-title { flex-direction: row-reverse; }
-    @media (max-width: 768px) {
-      .sidebar { right: 0; left: auto; transform: translateX(110%); }
-      .sidebar.open { transform: translateX(0); }
-      .main-content { margin-right: 0; }
-    }
-    .company-logo-img { height: 36px; width: auto; object-fit: contain; }
-  </style>
-</head>
-<body>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-header">
-    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
-         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
-    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
-      <div class="sidebar-logo-icon">🏢</div>
-      <div class="sidebar-logo-text">
-        <div class="brand-name">HR MAWARAN</div>
-        <div class="brand-sub">پۆرتاڵی کارمەند</div>
-      </div>
-    </div>
-  </div>
-  <div class="sidebar-user">
-    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
-    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
-  </div>
-  <nav class="sidebar-nav">
-    <div class="nav-section-label">مینیوی سەرەکی</div>
-    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
-    <a class="nav-item active" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
-    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
-    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
-    <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
-  </nav>
-  <div class="sidebar-footer">
-    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
-  </div>
-</aside>
+/**
+ * HR NEXUS — script.js
+ * Shared utilities, API communication, session management
+ * Used by all employee-facing pages and admin panel
+ */
 
-<div class="main-content">
-  <header class="topbar">
-    <div class="topbar-avatar" id="topbarAvatar">?</div>
-    <span class="topbar-date" id="topbarDate"></span>
-    <div class="topbar-spacer"></div>
-    <span class="topbar-title">ئامادەبوون</span>
-    <button class="topbar-hamburger" id="hamburger">☰</button>
-  </header>
-  <main class="page-content">
-    <div class="page-header">
-      <h1 class="page-title">بەدواداچوونی ئامادەبوون</h1>
-      <p class="page-subtitle">کاتی هاتنەژوورەوە و چوونەدەرەوەی ڕۆژانەت تۆمار بکە</p>
-    </div>
-
-    <!-- Clock -->
-    <div class="attendance-clock">
-      <div class="clock-display" id="clockDisplay">00:00:00</div>
-      <div class="clock-date" id="clockDate">چاوەڕێبکە...</div>
-      <div class="attendance-actions">
-        <button class="btn btn-success clock-btn" id="checkInBtn" onclick="doCheckIn()">✅ هاتنەژوورەوە</button>
-        <button class="btn btn-danger clock-btn" id="checkOutBtn" onclick="doCheckOut()" disabled>🔴 چوونەدەرەوە</button>
-      </div>
-      <div class="status-indicator" id="statusIndicator">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">ئەمڕۆ هێشتا نەهاتووەتەژوورەوە</span>
-      </div>
-      <div class="status-indicator" id="locationIndicator" style="margin-top:10px;font-size:13px;color:var(--text-muted)">
-        <span>📍</span>
-        <span id="locationText">شوێنەکەت لە کاتی هاتنەژوورەوە/چوونەدەرەوە پشکنراوە دەبێت</span>
-      </div>
-    </div>
-
-    <!-- Today's Summary -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-      <div class="stat-card green">
-        <div class="stat-info">
-          <div class="stat-label">کاتی هاتنەژوورەوە</div>
-          <div class="stat-value" id="todayCheckIn" style="font-size:22px">—</div>
-        </div>
-        <div class="stat-icon green">✅</div>
-      </div>
-      <div class="stat-card blue">
-        <div class="stat-info">
-          <div class="stat-label">کاتی چوونەدەرەوە</div>
-          <div class="stat-value" id="todayCheckOut" style="font-size:22px">—</div>
-        </div>
-        <div class="stat-icon blue">🔴</div>
-      </div>
-    </div>
-
-    <!-- History -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <div class="card-title-icon blue">📋</div>
-          مێژووی ئامادەبوون
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄 نوێکردنەوە</button>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>بەروار</th>
-              <th>هاتنەژوورەوە</th>
-              <th>چوونەدەرەوە</th>
-              <th>دۆخ</th>
-            </tr>
-          </thead>
-          <tbody id="attHistoryBody">
-            <tr><td colspan="4" class="loading-rows">مێژوو بارکراوە...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-</div>
-
-<!-- Outside Office Modal -->
-<div class="modal-overlay" id="outsideModal" style="display:none">
-  <div class="modal" style="max-width:440px">
-    <div class="modal-header">
-      <div class="modal-title">⚠️ دەرەوەی ئۆفیس</div>
-      <button class="modal-close" onclick="closeModal('outsideModal')">×</button>
-    </div>
-
-    <!-- Step 1: Warning -->
-    <div id="outsideStep1" style="padding:20px;text-align:center">
-      <div style="font-size:48px;margin-bottom:12px">📍</div>
-      <p id="outsideModalMsg" style="margin-bottom:12px;color:var(--text-muted);font-size:14px"></p>
-      <p style="color:var(--gold-500);font-weight:600;font-size:14px">دەتوانیت داواکاری بنێریت بۆ مۆڵەتی ئەدمین</p>
-    </div>
-
-    <!-- Step 2: Note + Camera -->
-    <div id="outsideStep2" style="display:none;padding:0 20px 8px">
-      <div style="padding:12px;background:rgba(245,158,11,0.08);border-radius:8px;margin-bottom:16px;font-size:13px;color:var(--gold-500);text-align:right">
-        ⚠️ <span id="outsideStep2Msg"></span>
-      </div>
-      <div class="form-group">
-        <label class="form-label" style="text-align:right;display:block">
-          تێبینی / هۆکار <span style="color:#f43f5e">*</span>
-        </label>
-        <textarea class="form-control" id="outsideNote" rows="3"
-          placeholder="هۆکاری بوونت لە دەرەوەی ئۆفیس بنووسە..." style="text-align:right"></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label" style="text-align:right;display:block">
-          وێنەی شوێن <span style="color:#f43f5e">*</span>
-        </label>
-        <!-- Camera capture only (no gallery) -->
-        <input type="file" id="outsidePhoto" accept="image/*" capture="environment"
-          style="display:none" onchange="onPhotoSelected(event)">
-        <div id="photoPreview" style="border:2px dashed var(--border-color);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:var(--bg-secondary)"
-          onclick="document.getElementById('outsidePhoto').click()">
-          <div style="font-size:36px;margin-bottom:8px">📷</div>
-          <div style="color:var(--text-muted);font-size:13px">کامێرا بکەوە و وێنە بگرە</div>
-        </div>
-        <img id="photoThumb" style="display:none;width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">
-        <button id="retakeBtn" style="display:none;margin-top:8px" class="btn btn-secondary btn-sm btn-block"
-          onclick="retakePhoto()">🔄 دووبارە وێنە بگرە</button>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('outsideModal')">❌ هەڵوەشاندنەوە</button>
-      <!-- Step 1 button -->
-      <button class="btn btn-primary" id="outsideNextBtn" onclick="goToOutsideStep2()">داواکاری بنێرە →</button>
-      <!-- Step 2 button -->
-      <button class="btn btn-primary" id="outsideSendBtn" style="display:none" onclick="sendOutsideRequest()">📤 نێردنی داواکاری</button>
-    </div>
-  </div>
-</div>
-
-<script src="assets/script.js"></script>
-<script>
-let todayRecord = null;
-
-const COMPANY_LOCATION = {
-  lat: 36.15638865284262,
-  lng: 44.019461850607506,
-  maxDistance: 100
+/* ══════════════════════════════════════════════
+   ▌ CONFIGURATION — Set your Apps Script URL here
+   ══════════════════════════════════════════════ */
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbylg9InrYGpYgPNj_d-xW8Rly6tYB8cv8m_LTh7xC-7xHy3Bxkfal2KxI-j4eMcf3A/exec',
+  APP_NAME: 'HR Nexus',
+  SESSION_KEY: 'hr_nexus_session',
+  VERSION: '1.0.0'
 };
 
-function calcDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+/* ══════════════════════════════════════════════
+   ▌ SESSION MANAGEMENT
+   ══════════════════════════════════════════════ */
+const Session = {
+  /**
+   * Save user session to localStorage
+   * @param {Object} user - User data object
+   */
+  set(user) {
+    localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(user));
+  },
+
+  /** Get current session user */
+  get() {
+    const raw = localStorage.getItem(CONFIG.SESSION_KEY);
+    try { return raw ? JSON.parse(raw) : null; }
+    catch { return null; }
+  },
+
+  /** Clear session (logout) */
+  clear() {
+    localStorage.removeItem(CONFIG.SESSION_KEY);
+  },
+
+  /** Check if user is logged in */
+  isLoggedIn() {
+    return !!this.get();
+  },
+
+  /** Check if current user is admin */
+  isAdmin() {
+    const u = this.get();
+    return u && u.role === 'admin';
+  }
+};
+
+/* ══════════════════════════════════════════════
+   ▌ API LAYER — Google Apps Script communication
+   ══════════════════════════════════════════════ */
+const API = {
+  /**
+   * Generic fetch wrapper for Google Apps Script
+   * GAS requires GET for CORS — we encode action & payload in URL params
+   */
+  async request(action, params = {}) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.set('action', action);
+    // Encode data payload as JSON string in a param
+    if (Object.keys(params).length > 0) {
+      url.searchParams.set('payload', JSON.stringify(params));
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      redirect: 'follow'
+    });
+
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const text = await response.text();
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error('Invalid server response'); }
+  },
+
+  /* ── Auth ── */
+  async login(id, password, role) {
+    return this.request('login', { id, password, role });
+  },
+
+  /* ── Employees ── */
+  async getEmployees() {
+    return this.request('getEmployees');
+  },
+  async addEmployee(data) {
+    return this.request('addEmployee', data);
+  },
+  async updateEmployee(data) {
+    return this.request('updateEmployee', data);
+  },
+  async deleteEmployee(id) {
+    return this.request('deleteEmployee', { id });
+  },
+
+  /* ── Attendance ── */
+  async checkIn(employeeId, name) {
+    return this.request('checkIn', { employeeId, name });
+  },
+  async checkOut(employeeId, name) {
+    return this.request('checkOut', { employeeId, name });
+  },
+  async getAttendance(filters = {}) {
+    return this.request('getAttendance', filters);
+  },
+
+  /* ── Announcements ── */
+  async getAnnouncements() {
+    return this.request('getAnnouncements');
+  },
+  async addAnnouncement(data) {
+    return this.request('addAnnouncement', data);
+  },
+  async updateAnnouncement(data) {
+    return this.request('updateAnnouncement', data);
+  },
+  async deleteAnnouncement(id) {
+    return this.request('deleteAnnouncement', { id });
+  },
+
+  /* ── Salary ── */
+  async getSalary(employeeId = null) {
+    return this.request('getSalary', employeeId ? { employeeId } : {});
+  },
+  async addSalaryRecord(data) {
+    return this.request('addSalaryRecord', data);
+  },
+  async updateSalaryRecord(data) {
+    return this.request('updateSalaryRecord', data);
+  },
+  async deleteSalaryRecord(id) {
+    return this.request('deleteSalaryRecord', { id });
+  },
+
+  /* ── Reports ── */
+  async getStats()                    { return this.request('getStats'); },
+
+  /* ── Requests (Leave + Outside Attendance) ── */
+  async getRequests(filters = {})     { return this.request('getRequests', filters); },
+  async addRequest(data)              { return this.request('addRequest', data); },
+  async approveRequest(data)          { return this.request('approveRequest', data); },
+  async rejectRequest(data)           { return this.request('rejectRequest', data); },
+
+  async uploadPhoto(data) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.set('action', 'uploadPhoto');
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const text = await response.text();
+    try { return JSON.parse(text); } catch(e) { throw new Error('Invalid response'); }
+  }
+};
+
+/* ══════════════════════════════════════════════
+   ▌ TOAST NOTIFICATIONS
+   ══════════════════════════════════════════════ */
+const Toast = {
+  container: null,
+
+  init() {
+    if (!this.container) {
+      this.container = document.createElement('div');
+      this.container.className = 'toast-container';
+      document.body.appendChild(this.container);
+    }
+  },
+
+  show(title, message = '', type = 'info', duration = 4000) {
+    this.init();
+    const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+      <span class="toast-icon">${icons[type] || icons.info}</span>
+      <div>
+        <div class="toast-title">${title}</div>
+        ${message ? `<div class="toast-body">${message}</div>` : ''}
+      </div>
+      <button class="toast-dismiss" onclick="this.closest('.toast').remove()">×</button>
+    `;
+    this.container.appendChild(toast);
+    if (duration > 0) {
+      setTimeout(() => toast.remove(), duration);
+    }
+  },
+
+  success(title, msg)  { this.show(title, msg, 'success'); },
+  error(title, msg)    { this.show(title, msg, 'error'); },
+  info(title, msg)     { this.show(title, msg, 'info'); },
+  warning(title, msg)  { this.show(title, msg, 'warning'); }
+};
+
+/* ══════════════════════════════════════════════
+   ▌ LOADING OVERLAY
+   ══════════════════════════════════════════════ */
+const Loader = {
+  overlay: null,
+
+  show(text = 'Loading...') {
+    if (!this.overlay) {
+      this.overlay = document.createElement('div');
+      this.overlay.className = 'loading-overlay';
+      this.overlay.innerHTML = `
+        <div class="spinner"></div>
+        <div class="loading-text" id="loaderText">${text}</div>
+      `;
+      document.body.appendChild(this.overlay);
+    } else {
+      document.getElementById('loaderText').textContent = text;
+      this.overlay.style.display = 'flex';
+    }
+  },
+
+  hide() {
+    if (this.overlay) {
+      this.overlay.style.display = 'none';
+    }
+  }
+};
+
+/* ══════════════════════════════════════════════
+   ▌ UI HELPERS
+   ══════════════════════════════════════════════ */
+
+/**
+ * Format date to DD/MM/YYYY
+ * @param {string|Date} date
+ */
+function formatDate(date) {
+  if (!date) return '—';
+  const d = new Date(date);
+  if (isNaN(d)) return date;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function checkLocation() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) { reject(new Error('براوزەرەکەت پشتیوانی شوێن ناکات.')); return; }
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const dist = calcDistance(pos.coords.latitude, pos.coords.longitude, COMPANY_LOCATION.lat, COMPANY_LOCATION.lng);
-        resolve({ allowed: dist <= COMPANY_LOCATION.maxDistance, distance: Math.round(dist) });
-      },
-      err => {
-        const msgs = { 1: 'مۆڵەتی شوێن دەست پێ نەکراوە. تکایە مۆڵەتی شوێن بدە.', 2: 'شوێن بەردەست نیە. دووبارە هەوڵبدەرەوە.', 3: 'ئاگادارکردنەوەی شوێن کاتی تەواوکرد.' };
-        reject(new Error(msgs[err.code] || 'شوێن بەدەستنەهات.'));
-      },
-      { timeout: 10000, maximumAge: 0, enableHighAccuracy: true }
-    );
+/**
+ * Format currency
+ * @param {number} amount
+ */
+function formatCurrency(amount) {
+  const n = parseFloat(amount) || 0;
+  return n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+/**
+ * Get user initials from full name
+ * @param {string} name
+ */
+function getInitials(name = '') {
+  return name.split(' ').slice(0, 2).map(n => n[0]?.toUpperCase()).join('') || '?';
+}
+
+/**
+ * Escape HTML to prevent XSS
+ * @param {string} str
+ */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = String(str ?? '');
+  return div.innerHTML;
+}
+
+/**
+ * Debounce function
+ */
+function debounce(fn, delay = 300) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+/* confirm() removed to prevent infinite loop */
+
+/* ══════════════════════════════════════════════
+   ▌ SIDEBAR TOGGLE (mobile)
+   ══════════════════════════════════════════════ */
+function initSidebar() {
+  const hamburger = document.getElementById('hamburger');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('sidebarOverlay');
+
+  if (!hamburger || !sidebar) return;
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  });
+
+  if (overlay) {
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+  }
+
+  // Close on nav item click (mobile)
+  document.querySelectorAll('.nav-item[href]').forEach(item => {
+    item.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay?.classList.remove('show');
+    });
   });
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const user = requireAuth(false);
+/* ══════════════════════════════════════════════
+   ▌ LIVE CLOCK
+   ══════════════════════════════════════════════ */
+function startClock(clockId, dateId) {
+  function update() {
+    const now = new Date();
+    const clockEl = document.getElementById(clockId);
+    const dateEl  = document.getElementById(dateId);
+    if (clockEl) {
+      clockEl.textContent = now.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+      });
+    }
+    if (dateEl) {
+      dateEl.textContent = now.toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+    }
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+/* ══════════════════════════════════════════════
+   ▌ AUTH GUARD — Redirect if not logged in
+   ══════════════════════════════════════════════ */
+function requireAuth(adminOnly = false) {
+  const user = Session.get();
+  if (!user) {
+    window.location.href = 'index.html';
+    return null;
+  }
+  if (adminOnly && user.role !== 'admin') {
+    window.location.href = 'attendance.html';
+    return null;
+  }
+  return user;
+}
+
+/**
+ * Populate sidebar user info
+ */
+function populateSidebarUser() {
+  const user = Session.get();
   if (!user) return;
-  startClock('clockDisplay', 'clockDate');
-  await loadAttendanceHistory();
+
+  const nameEl = document.getElementById('sidebarUserName');
+  const roleEl = document.getElementById('sidebarUserRole');
+  const avatarEl = document.getElementById('topbarAvatar');
+
+  if (nameEl) nameEl.textContent = user.name || user.id;
+  if (roleEl) roleEl.textContent = user.role === 'admin' ? 'HR Admin' : user.department || 'Employee';
+  if (avatarEl) avatarEl.textContent = getInitials(user.name || user.id);
+}
+
+/* ══════════════════════════════════════════════
+   ▌ LOGOUT
+   ══════════════════════════════════════════════ */
+function logout() {
+  if (window.confirm('Are you sure you want to logout?')) {
+    Session.clear();
+    window.location.href = 'index.html';
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ▌ MODAL HELPERS
+   ══════════════════════════════════════════════ */
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'flex';
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+// Close modal on overlay click
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.style.display = 'none';
+  }
 });
 
-async function loadAttendanceHistory() {
-  const user = Session.get();
-  document.getElementById('attHistoryBody').innerHTML =
-    `<tr><td colspan="4" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>بارکراوە...</td></tr>`;
-  try {
-    // Fetch ALL attendance records
-    const res = await API.getAttendance({});
-    if (!res.success) throw new Error(res.message);
-
-    // ── Helper: extract yyyy-MM-dd from any date string ──
-    function parseDate(val) {
-      if (!val) return '';
-      const s = String(val);
-      // Already yyyy-MM-dd
-      const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
-      if (iso) return iso[1];
-      // Long Google Sheets date string e.g. "Tue Mar 10 2026 00:00:00 GMT+0300"
-      const d = new Date(s);
-      if (!isNaN(d)) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth()+1).padStart(2,'0');
-        const day = String(d.getDate()).padStart(2,'0');
-        // Fix 1899 ghost dates — return empty
-        if (y < 1970) return '';
-        return `${y}-${m}-${day}`;
-      }
-      return s.substring(0,10);
-    }
-
-    // ── Helper: extract HH:mm:ss from any time/date string ──
-    function parseTime(val) {
-      if (!val) return '';
-      const s = String(val);
-      // Already HH:mm:ss
-      const t = s.match(/(\d{2}:\d{2}:\d{2})/);
-      if (t) return t[1];
-      // Google Sheets time stored as Date (1899-12-30 epoch)
-      const d = new Date(s);
-      if (!isNaN(d)) {
-        const h = String(d.getHours()).padStart(2,'0');
-        const m = String(d.getMinutes()).padStart(2,'0');
-        const sec = String(d.getSeconds()).padStart(2,'0');
-        return `${h}:${m}:${sec}`;
-      }
-      return s;
-    }
-
-    // ── Normalize all records ──
-    const allRecords = (res.data || []).map(r => ({
-      date:       parseDate(r.date || r.Date || r.DATE || ''),
-      checkIn:    parseTime(r.checkIn || r.CheckIn || r.CHECKIN || ''),
-      checkOut:   parseTime(r.checkOut || r.CheckOut || r.CHECKOUT || ''),
-      employeeId: String(r.employeeId || r.EmployeeID || r.employeeid || '').trim(),
-      name:       String(r.name || r.Name || '').trim()
-    }));
-
-    // ── Filter: match by employeeId OR by name (fallback) ──
-    const userId   = String(user.id   || '').trim().toLowerCase();
-    const userName = String(user.name || '').trim().toLowerCase();
-    const records = allRecords.filter(r =>
-      (r.employeeId && r.employeeId.toLowerCase() === userId) ||
-      (r.name       && r.name.toLowerCase()       === userName)
-    );
-
-    const today = new Date().toISOString().split('T')[0];
-    const todayRecords = records.filter(r => r.date && r.date.startsWith(today));
-    todayRecord = todayRecords.length ? todayRecords[todayRecords.length - 1] : null;
-    updateTodayStatus(todayRecord);
-
-    const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const tbody = document.getElementById('attHistoryBody');
-    if (!sorted.length) {
-      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">هیچ تۆمارێکی ئامادەبوون نیە</div></div></td></tr>`;
-      return;
-    }
-    tbody.innerHTML = sorted.map(r => {
-      const complete = r.checkOut && r.checkOut !== '—' && r.checkOut !== '';
-      return `<tr>
-        <td class="bold">${formatDate(r.date)}</td>
-        <td><span class="badge badge-green">${r.checkIn || '—'}</span></td>
-        <td>${complete ? `<span class="badge badge-blue">${r.checkOut}</span>` : '<span class="badge badge-muted">—</span>'}</td>
-        <td>${complete
-          ? '<span class="badge badge-green">تەواو</span>'
-          : r.checkIn
-            ? '<span class="badge badge-gold">بەردەوامە</span>'
-            : '<span class="badge badge-muted">غایب</span>'
-        }</td>
-      </tr>`;
-    }).join('');
-  } catch (e) {
-    document.getElementById('attHistoryBody').innerHTML =
-      `<tr><td colspan="4" class="loading-rows text-red">${e.message}</td></tr>`;
-    Toast.error('هەڵە', e.message);
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
   }
-}
+});
 
-function updateTodayStatus(record) {
-  const checkInBtn  = document.getElementById('checkInBtn');
-  const checkOutBtn = document.getElementById('checkOutBtn');
-  const statusDot   = document.getElementById('statusDot');
-  const statusText  = document.getElementById('statusText');
-  const todayCI     = document.getElementById('todayCheckIn');
-  const todayCO     = document.getElementById('todayCheckOut');
-
-  const hasCheckIn  = record && record.checkIn  && record.checkIn  !== '—' && record.checkIn  !== '';
-  const hasCheckOut = record && record.checkOut && record.checkOut !== '—' && record.checkOut !== '';
-
-  if (!record || !hasCheckIn) {
-    checkInBtn.disabled = false; checkOutBtn.disabled = true;
-    statusDot.className = 'status-dot'; statusText.textContent = 'ئەمڕۆ هێشتا نەهاتووەتەژوورەوە';
-    todayCI.textContent = '—'; todayCO.textContent = '—';
-  } else if (hasCheckIn && !hasCheckOut) {
-    checkInBtn.disabled = true; checkOutBtn.disabled = false;
-    statusDot.className = 'status-dot checked-in';
-    statusText.textContent = `هاتوویتەژوورەوە لە ${record.checkIn}`;
-    todayCI.textContent = record.checkIn; todayCO.textContent = '—';
-  } else {
-    checkInBtn.disabled = true; checkOutBtn.disabled = true;
-    statusDot.className = 'status-dot'; statusDot.style.background = 'var(--blue-500)';
-    statusText.textContent = `ڕۆژ تەواوبوو — ${record.checkIn} → ${record.checkOut}`;
-    todayCI.textContent = record.checkIn; todayCO.textContent = record.checkOut;
-  }
-}
-
-// Stores pending outside-office action
-let _pendingOutside = null;
-
-async function doCheckIn() {
-  const user = Session.get();
-  const btn = document.getElementById('checkInBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
-  try {
-    const loc = await checkLocation();
-    if (!loc.allowed) {
-      btn.disabled = false;
-      btn.innerHTML = '✅ هاتنەژوورەوە';
-      _pendingOutside = { action: 'checkin', loc };
-      document.getElementById('outsideModalMsg').textContent =
-        `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
-      openOutsideModal();
-      return;
-    }
-    btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
-    const res = await API.checkIn(user.id, user.name);
-    if (res.success) {
-      const now = res.data && res.data.checkIn ? res.data.checkIn : new Date().toLocaleTimeString('en-GB');
-      Toast.success('هاتنەژوورەوە تۆماركرا! 📍', `بەخێربێیت، ${user.name}!`);
-      btn.disabled = true; btn.innerHTML = '✅ هاتنەژوورەوە';
-      document.getElementById('checkOutBtn').disabled = false;
-      document.getElementById('statusDot').className = 'status-dot checked-in';
-      document.getElementById('statusText').textContent = `هاتوویتەژوورەوە لە ${now}`;
-      document.getElementById('todayCheckIn').textContent = now;
-      document.getElementById('todayCheckOut').textContent = '—';
-      await loadAttendanceHistory();
-    } else throw new Error(res.message);
-  } catch (e) {
-    Toast.error('هاتنەژوورەوە سەرکەوتوو نەبوو', e.message);
-    btn.disabled = false; btn.innerHTML = '✅ هاتنەژوورەوە';
-  }
-}
-
-async function doCheckOut() {
-  const user = Session.get();
-  const btn = document.getElementById('checkOutBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner spinner-sm"></span> شوێن دیاریدەکرێت...';
-  try {
-    const loc = await checkLocation();
-    if (!loc.allowed) {
-      btn.disabled = false;
-      btn.innerHTML = '🔴 چوونەدەرەوە';
-      _pendingOutside = { action: 'checkout', loc };
-      document.getElementById('outsideModalMsg').textContent =
-        `تۆ ${loc.distance} مەتر دوورە لە ئۆفیس (زیادەی ${COMPANY_LOCATION.maxDistance} مەتر). دەبێت مۆڵەتی ئەدمین بگریت.`;
-      openOutsideModal();
-      return;
-    }
-    btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
-    const res = await API.checkOut(user.id, user.name);
-    if (res.success) {
-      const now = res.data && res.data.checkOut ? res.data.checkOut : new Date().toLocaleTimeString('en-GB');
-      const ci  = document.getElementById('todayCheckIn').textContent;
-      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `بەیانت باش!`);
-      // Update UI directly
-      btn.disabled = true;
-      btn.innerHTML = '🔴 چوونەدەرەوە';
-      document.getElementById('checkInBtn').disabled = true;
-      document.getElementById('statusDot').className = 'status-dot';
-      document.getElementById('statusDot').style.background = 'var(--blue-500)';
-      document.getElementById('statusText').textContent = `ڕۆژ تەواوبوو — ${ci} → ${now}`;
-      document.getElementById('todayCheckOut').textContent = now;
-      await loadAttendanceHistory();
-    } else throw new Error(res.message);
-  } catch (e) {
-    Toast.error('چوونەدەرەوە سەرکەوتوو نەبوو', e.message);
-    btn.disabled = false;
-    btn.innerHTML = '🔴 چوونەدەرەوە';
-  }
-}
-
-// ── Outside Office: Step management ──
-let _outsidePhotoBase64 = null;
-
-function goToOutsideStep2() {
-  document.getElementById('outsideStep1').style.display = 'none';
-  document.getElementById('outsideStep2').style.display = 'block';
-  document.getElementById('outsideNextBtn').style.display = 'none';
-  document.getElementById('outsideSendBtn').style.display = 'inline-flex';
-  const msg = document.getElementById('outsideModalMsg').textContent;
-  document.getElementById('outsideStep2Msg').textContent = msg;
-  // Reset fields
-  document.getElementById('outsideNote').value = '';
-  _outsidePhotoBase64 = null;
-  document.getElementById('photoThumb').style.display = 'none';
-  document.getElementById('retakeBtn').style.display = 'none';
-  document.getElementById('photoPreview').style.display = 'block';
-}
-
-function onPhotoSelected(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      // ضغط قوي: max 400px، جودة 55% → ~10-20KB للتخزين في Sheets
-      const MAX = 400;
-      let w = img.width, h = img.height;
-      if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-      if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-
-      _outsidePhotoBase64 = canvas.toDataURL('image/jpeg', 0.55);
-      const kb = Math.round(_outsidePhotoBase64.length * 0.75 / 1024);
-
-      document.getElementById('photoThumb').src = _outsidePhotoBase64;
-      document.getElementById('photoThumb').style.display = 'block';
-      document.getElementById('photoPreview').style.display = 'none';
-      document.getElementById('retakeBtn').style.display = 'block';
-      document.getElementById('retakeBtn').textContent = `🔄 دووبارە وێنە بگرە (~${kb}KB)`;
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function retakePhoto() {
-  _outsidePhotoBase64 = null;
-  document.getElementById('outsidePhoto').value = '';
-  document.getElementById('photoThumb').style.display = 'none';
-  document.getElementById('retakeBtn').style.display = 'none';
-  document.getElementById('photoPreview').style.display = 'block';
-}
-
-// Reset modal to step 1 when opened
-function openOutsideModal() {
-  document.getElementById('outsideStep1').style.display = 'block';
-  document.getElementById('outsideStep2').style.display = 'none';
-  document.getElementById('outsideNextBtn').style.display = 'inline-flex';
-  document.getElementById('outsideSendBtn').style.display = 'none';
-  openOutsideModal();
-}
-
-async function sendOutsideRequest() {
-  const user = Session.get();
-  if (!_pendingOutside) return;
-
-  const note  = document.getElementById('outsideNote').value.trim();
-  if (!note) { Toast.warning('تێبینی', 'تکایە هۆکارەکە بنووسە'); return; }
-  if (!_outsidePhotoBase64) { Toast.warning('تێبینی', 'تکایە وێنەیەک بگرە'); return; }
-
-  const btn = document.getElementById('outsideSendBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
-
-  try {
-    const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
-
-    // تخزين الصورة مباشرة في Sheets (base64 مضغوط ~10-20KB)
-    const res = await API.addRequest({
-      employeeId: user.id,
-      name:       user.name,
-      type:       'attendance_outside',
-      message:    `داواکاری ${actionLabel} لە دەرەوەی ئۆفیس — ${_pendingOutside.loc.distance} مەتر دوور | ${note}`,
-      extra:      JSON.stringify({
-        action:      _pendingOutside.action,
-        distance:    _pendingOutside.loc.distance,
-        note,
-        photoBase64: _outsidePhotoBase64
-      })
+/* ══════════════════════════════════════════════
+   ▌ UPDATE TOPBAR DATE
+   ══════════════════════════════════════════════ */
+function updateTopbarDate() {
+  const el = document.getElementById('topbarDate');
+  if (el) {
+    el.textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric'
     });
-
-    if (res.success) {
-      Toast.success('داواکاری نێردرا ✅', 'چاوەڕێی مۆڵەتی ئەدمین بکە');
-      closeModal('outsideModal');
-      document.getElementById('statusText').textContent =
-        `⏳ چاوەڕێی مۆڵەت — ${actionLabel} لە دەرەوەی ئۆفیس`;
-    } else throw new Error(res.message);
-  } catch(e) {
-    Toast.error('نێردن سەرکەوتوو نەبوو', e.message);
-  } finally {
-    btn.disabled = false; btn.innerHTML = '📤 نێردنی داواکاری';
-    _pendingOutside = null;
   }
 }
-</script>
-</body>
-</html>
+
+/* ══════════════════════════════════════════════
+   ▌ MARK ACTIVE NAV ITEM
+   ══════════════════════════════════════════════ */
+function markActiveNav() {
+  const current = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const href = item.getAttribute('href');
+    if (href && href === current) {
+      item.classList.add('active');
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════
+   ▌ GLOBAL INIT on DOMContentLoaded
+   ══════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  initSidebar();
+  updateTopbarDate();
+  markActiveNav();
+  populateSidebarUser();
+
+  // Logout buttons
+  document.querySelectorAll('[data-logout]').forEach(btn => {
+    btn.addEventListener('click', logout);
+  });
+});
