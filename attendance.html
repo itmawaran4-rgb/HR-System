@@ -462,37 +462,16 @@ function onPhotoSelected(event) {
   reader.onload = (e) => {
     const img = new Image();
     img.onload = () => {
-      // ضغط تكراري: يخفض الجودة حتى يصل الحجم تحت 40KB
-      const TARGET_KB = 40;    // الحد الأقصى المقبول
-      const MAX_PX    = 320;   // أقصى أبعاد
-
+      // ضغط قصوى: 150px + جودة 25% — الدقة غير مهمة
+      const MAX_PX = 150;
       let w = img.width, h = img.height;
-      if (w > MAX_PX) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
-      if (h > MAX_PX) { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
+      if (w > h) { h = Math.round(h * MAX_PX / w); w = MAX_PX; }
+      else        { w = Math.round(w * MAX_PX / h); h = MAX_PX; }
 
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-
-      // ابدأ بجودة 50% وخفّض حتى يصل الحجم للهدف
-      let quality = 0.50;
-      let result  = canvas.toDataURL('image/jpeg', quality);
-
-      while (result.length * 0.75 / 1024 > TARGET_KB && quality > 0.10) {
-        quality -= 0.08;
-        result = canvas.toDataURL('image/jpeg', Math.max(quality, 0.10));
-      }
-
-      // إذا لم يكفِ، قلص الأبعاد بنسبة 70% وأعد المحاولة
-      if (result.length * 0.75 / 1024 > TARGET_KB) {
-        const w2 = Math.round(w * 0.7), h2 = Math.round(h * 0.7);
-        const c2 = document.createElement('canvas');
-        c2.width = w2; c2.height = h2;
-        c2.getContext('2d').drawImage(canvas, 0, 0, w2, h2);
-        result = c2.toDataURL('image/jpeg', 0.35);
-      }
-
-      _outsidePhotoBase64 = result;
+      _outsidePhotoBase64 = canvas.toDataURL('image/jpeg', 0.25);
       const kb = Math.round(_outsidePhotoBase64.length * 0.75 / 1024);
 
       document.getElementById('photoThumb').src = _outsidePhotoBase64;
