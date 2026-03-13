@@ -278,7 +278,7 @@ function debounce(fn, delay = 300) {
   };
 }
 
-/* confirm() removed to prevent infinite loop */
+
 
 /* ══════════════════════════════════════════════
    ▌ SIDEBAR TOGGLE (mobile)
