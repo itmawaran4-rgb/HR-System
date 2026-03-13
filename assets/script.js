@@ -8,7 +8,7 @@
    ▌ CONFIGURATION — Set your Apps Script URL here
    ══════════════════════════════════════════════ */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbxRupjtbY1Ogbmv99oVH4aOn1tUHtTx_CR4scjJL8zWuMnW7z390pjyyKf6LMwKfig/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbylg9InrYGpYgPNj_d-xW8Rly6tYB8cv8m_LTh7xC-7xHy3Bxkfal2KxI-j4eMcf3A/exec',
   APP_NAME: 'HR Nexus',
   SESSION_KEY: 'hr_nexus_session',
   VERSION: '1.0.0'
