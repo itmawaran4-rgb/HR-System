@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   showAdminTab('tab-overview', null);
   await loadOverview();
 
+  // تحميل الطلبات في الخلفية وإظهار التنبيه
+  loadRequestsBackground();
+
   // Tab navigation
   document.querySelectorAll('[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -220,10 +223,17 @@ function renderTodayAttendance() {
           ? '<span class="badge badge-blue">Complete</span>'
           : '<span class="badge badge-gold">In Progress</span>';
       const duration = (hasIn && hasOut) ? calcDuration(rec.checkIn, rec.checkOut) : '—';
-      return `<tr style="cursor:pointer" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
+      // تحديد التأخر: بعد 9:10
+      const inMinsToday = hasIn ? timeToMins(rec.checkIn) : null;
+      const LATE_MINS   = 9 * 60 + 10; // 9:10
+      const isLate      = inMinsToday !== null && inMinsToday > LATE_MINS;
+      const checkInBadge = hasIn
+        ? `<span class="badge" style="background:${isLate ? 'rgba(244,63,94,0.15)' : 'rgba(34,197,94,0.15)'};color:${isLate ? '#f43f5e' : '#22c55e'};font-weight:${isLate ? '700' : '400'}">${rec.checkIn}${isLate ? ' ⚠️' : ''}</span>`
+        : '<span class="badge badge-muted">—</span>';
+      return `<tr style="cursor:pointer${isLate ? ';background:rgba(244,63,94,0.04)' : ''}" onclick="openEmpDetail('${escapeHtml(emp.id)}')">
         <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
         <td><span class="badge badge-blue">${escapeHtml(emp.department || '—')}</span></td>
-        <td><span class="badge badge-green">${hasIn  ? rec.checkIn  : '—'}</span></td>
+        <td>${checkInBadge}</td>
         <td><span class="badge ${hasOut ? 'badge-blue' : 'badge-muted'}">${hasOut ? rec.checkOut : '—'}</span></td>
         <td>${duration !== '—' ? `<span class="badge badge-green" style="font-weight:700">${duration}</span>` : '<span class="badge badge-muted">—</span>'}</td>
         <td>${status}</td>
@@ -848,9 +858,46 @@ async function deleteSalary(id) {
 let allRequests = [];
 let currentReqFilter = 'all';
 
+// تحميل الطلبات في الخلفية عند فتح الصفحة
+async function loadRequestsBackground() {
+  try {
+    const res = await API.getRequests({});
+    if (!res.success) return;
+    const all     = res.data || [];
+    const pending = all.filter(r => r.status === 'pending');
+
+    // تحديث badge رقم الطلبات
+    const badge = document.getElementById('pendingRequestsBadge');
+    if (badge) badge.textContent = pending.length > 0 ? pending.length : '';
+
+    // إشعار Toast للطلبات المعلقة
+    if (pending.length > 0) {
+      setTimeout(() => {
+        Toast.warning(
+          `📋 ${pending.length} Pending Request${pending.length > 1 ? 's' : ''}`,
+          'Click Requests tab to review'
+        );
+      }, 1200);
+    }
+
+    // حفظ البيانات لاستخدامها عند فتح التاب
+    allRequests = all.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (b.status === 'pending' && a.status !== 'pending') return 1;
+      return new Date(b.date) - new Date(a.date);
+    });
+  } catch(e) { /* صامت */ }
+}
+
 async function loadRequests() {
   const listEl = document.getElementById('requestsList');
   if (!listEl) return;
+
+  // إذا البيانات محملة مسبقاً من الخلفية، اعرضها فوراً
+  if (allRequests.length > 0) {
+    renderRequests();
+  }
+
   listEl.innerHTML = '<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>Loading...</div>';
 
   try {
