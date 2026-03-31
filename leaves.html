@@ -183,7 +183,7 @@
   </div>
 </div>
 
-<script src="assets/script.js?v=3"></script>
+<script src="assets/script.js?v=4"></script>
 <script>
 const leaveTypeLabels = {
   annual:  'مۆڵەتی ساڵانە',
@@ -203,6 +203,7 @@ function selectLeaveType(type) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   requireAuth(false);
+  initPushNotifications();
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   document.getElementById('leaveFrom').value = todayStr;
