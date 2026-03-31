@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbzVgeoTeIXjUrA7rACIL2gn2sOgGWMmwUKDoQH6tspQOusEKdOFNOTfqODkRopjYAo4/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwUPf876R4ikTwy0fEZy8BQsVdFMO8Juxl0jVnsr4LT9pPioQD7iQj8cpO8bL0WiUru/exec',
   APP_NAME: 'HR Nexus',
   SESSION_KEY: 'hr_nexus_session',
   VERSION: '1.0.0'
@@ -18,21 +18,31 @@ const Session = {
 };
 
 const API = {
-  async request(action, params = {}) {
+request(action, params = {}) {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'cb_' + Date.now();
+
     const url = new URL(CONFIG.API_URL);
     url.searchParams.set('action', action);
+    url.searchParams.set('callback', callbackName);
+
     if (Object.keys(params).length > 0) {
       url.searchParams.set('payload', JSON.stringify(params));
     }
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const text = await response.text();
-    try { return JSON.parse(text); }
-    catch(e) { throw new Error('Invalid server response'); }
-  },
+
+    window[callbackName] = (data) => {
+      resolve(data);
+      delete window[callbackName];
+      script.remove();
+    };
+
+    const script = document.createElement('script');
+    script.src = url.toString();
+    script.onerror = () => reject(new Error('Request failed'));
+    
+    document.body.appendChild(script);
+  });
+},
 
   async login(id, password, role)   { return this.request('login', { id, password, role }); },
   async getEmployees()              { return this.request('getEmployees'); },
