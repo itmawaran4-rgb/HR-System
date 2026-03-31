@@ -8,7 +8,7 @@
    ▌ CONFIGURATION — Set your Apps Script URL here
    ══════════════════════════════════════════════ */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbwxCCN1G9Ww_RmkvLqTz9CeOLH-_LLQOcu12OKTAcmlAq9s5uDa0rq95dSsHhs64IRa/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbye5dBWKhxjNHm3WagTWpxYp08VsWB4UEu0f82kvG61A3XO0a4aYbzT-09A5ldhveqQ/exec',
   APP_NAME: 'HR Nexus',
   SESSION_KEY: 'hr_nexus_session',
   VERSION: '1.0.0'
@@ -143,6 +143,21 @@ const API = {
   async addRequest(data)              { return this.request('addRequest', data); },
   async approveRequest(data)          { return this.request('approveRequest', data); },
   async rejectRequest(data)           { return this.request('rejectRequest', data); },
+
+  async savePushToken(data)           { return this.request('savePushToken', data); },
+
+  async uploadPhoto(data) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.set('action', 'uploadPhoto');
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const text = await response.text();
+    try { return JSON.parse(text); } catch(e) { throw new Error('Invalid response'); }
+  },
 
   async uploadPhoto(data) {
     const url = new URL(CONFIG.API_URL);
@@ -441,3 +456,70 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', logout);
   });
 });
+
+/* ══════════════════════════════════════════════
+   ▌ PUSH NOTIFICATIONS — Firebase FCM
+   ══════════════════════════════════════════════ */
+
+// ← ضع إعدادات Firebase الخاصة بك هنا
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+// VAPID key من Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
+const VAPID_KEY = 'YOUR_VAPID_KEY';
+
+async function initPushNotifications() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    // تحميل Firebase scripts ديناميكياً
+    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
+
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    const messaging = firebase.messaging();
+
+    // طلب إذن الإشعارات
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    // تسجيل Service Worker
+    const reg = await navigator.serviceWorker.register('/HR-System/firebase-messaging-sw.js');
+
+    // الحصول على التوكن
+    const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (!token) return;
+
+    // حفظ التوكن في Sheets
+    const user = Session.get();
+    if (user) {
+      await API.savePushToken({ token, employeeId: user.id });
+    }
+
+    // استقبال الإشعارات عندما يكون التطبيق مفتوحاً
+    messaging.onMessage(payload => {
+      const { title, body } = payload.notification || {};
+      Toast.info(title || 'إشعار جديد', body || '');
+    });
+
+  } catch(e) {
+    console.warn('Push init failed:', e.message);
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
