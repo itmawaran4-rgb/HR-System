@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbx8J7_qNUqg1oijAaXgKaMmkpD7XO8ZVXqotPijjaHGfT-PW6aehIBYoMbdxw3ROOzW/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxb8k07a2eRwH4zY35cnLva4jpx7GojVPJHejdOqBQnSHBgZ1HM3BXs8X02DCcXf2fD/exec',
   APP_NAME: 'HR Nexus',
   SESSION_KEY: 'hr_nexus_session',
   VERSION: '1.0.0'
