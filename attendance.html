@@ -495,52 +495,85 @@ function goToOutsideStep2() {
 function onPhotoSelected(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  // استخدام readAsDataURL — أكثر توافقاً مع iOS القديم من ArrayBuffer+blobURL
   const reader = new FileReader();
-  reader.onload = (e) => {
-    const arrayBuffer = e.target.result;
-    // قراءة EXIF orientation لإصلاح دوران الصورة
-    const orientation = getExifOrientation(arrayBuffer);
-    const blob = new Blob([arrayBuffer]);
-    const blobUrl = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const MAX_PX = 150;
-      let w = img.width, h = img.height;
-      // تبديل الأبعاد إذا كانت الصورة مدورة 90/270 درجة
-      const swapped = orientation >= 5 && orientation <= 8;
-      const srcW = swapped ? h : w;
-      const srcH = swapped ? w : h;
-      let dw = srcW, dh = srcH;
-      if (dw > dh) { dh = Math.round(dh * MAX_PX / dw); dw = MAX_PX; }
-      else          { dw = Math.round(dw * MAX_PX / dh); dh = MAX_PX; }
 
-      const canvas = document.createElement('canvas');
-      canvas.width = dw; canvas.height = dh;
-      const ctx = canvas.getContext('2d');
-
-      // تطبيق التحويل بحسب orientation
-      ctx.save();
-      applyExifOrientation(ctx, orientation, dw, dh);
-      ctx.drawImage(img, 0, 0, swapped ? dh : dw, swapped ? dw : dh);
-      ctx.restore();
-
-      URL.revokeObjectURL(blobUrl);
-      _outsidePhotoBase64 = canvas.toDataURL('image/jpeg', 0.25);
-      const kb = Math.round(_outsidePhotoBase64.length * 0.75 / 1024);
-
-      document.getElementById('photoThumb').src = _outsidePhotoBase64;
-      document.getElementById('photoThumb').style.display = 'block';
-      document.getElementById('photoPreview').style.display = 'none';
-      document.getElementById('retakeBtn').style.display = 'block';
-      document.getElementById('retakeBtn').textContent = `🔄 دووبارە وێنە بگرە (~${kb}KB)`;
-    };
-    img.src = blobUrl;
+  reader.onerror = () => {
+    Toast.error('هەڵە', 'وێنەکە نەخوێندرایەوە. دووبارە هەوڵبدەرەوە.');
   };
-  reader.readAsArrayBuffer(file);
+
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+
+    // قراءة EXIF من dataUrl — تحويله لArrayBuffer بطريقة آمنة
+    let orientation = 1;
+    try {
+      const binary = atob(dataUrl.split(',')[1]);
+      const bytes  = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      orientation = getExifOrientation(bytes.buffer);
+    } catch(_) { orientation = 1; }
+
+    const img = new Image();
+
+    img.onerror = () => {
+      Toast.error('هەڵە', 'وێنەکە بارنەبوو. جۆری وێنەکە پشکنە.');
+    };
+
+    img.onload = () => {
+      try {
+        const MAX_PX = 400; // كبّرنا قليلاً لجودة أفضل — الضغط JPEG يعوّض
+        const swapped = orientation >= 5 && orientation <= 8;
+        const srcW = swapped ? img.height : img.width;
+        const srcH = swapped ? img.width  : img.height;
+        let dw = srcW, dh = srcH;
+        if (dw > dh) { dh = Math.round(dh * MAX_PX / dw); dw = MAX_PX; }
+        else          { dw = Math.round(dw * MAX_PX / dh); dh = MAX_PX; }
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = dw;
+        canvas.height = dh;
+        const ctx = canvas.getContext('2d');
+        ctx.save();
+        applyExifOrientation(ctx, orientation, dw, dh);
+        ctx.drawImage(img, 0, 0, swapped ? dh : dw, swapped ? dw : dh);
+        ctx.restore();
+
+        // بعض Safari القديم يتجاهل 'image/jpeg' ويرجع PNG — نتحقق صراحةً
+        let result = canvas.toDataURL('image/jpeg', 0.3);
+        if (!result.startsWith('data:image/jpeg')) {
+          // Safari رجع PNG — نضغط أكثر عبر تصغير الحجم
+          const canvas2 = document.createElement('canvas');
+          const scale   = 0.5;
+          canvas2.width  = Math.round(dw * scale);
+          canvas2.height = Math.round(dh * scale);
+          canvas2.getContext('2d').drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
+          result = canvas2.toDataURL('image/png');
+        }
+
+        _outsidePhotoBase64 = result;
+        const kb = Math.round(result.length * 0.75 / 1024);
+
+        document.getElementById('photoThumb').src = result;
+        document.getElementById('photoThumb').style.display = 'block';
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('retakeBtn').style.display = 'block';
+        document.getElementById('retakeBtn').textContent = `🔄 دووبارە وێنە بگرە (~${kb}KB)`;
+      } catch(err) {
+        Toast.error('هەڵە', 'کێشە لە پرۆسەکردنی وێنە: ' + err.message);
+      }
+    };
+
+    img.src = dataUrl; // مباشرةً بدون blobURL — أكثر استقراراً على iOS
+  };
+
+  reader.readAsDataURL(file); // بدلاً من readAsArrayBuffer
 }
 
 function getExifOrientation(buffer) {
-  const view = new DataView(buffer);
+  try {
+    const view = new DataView(buffer);
   if (view.getUint16(0, false) !== 0xFFD8) return 1;
   const length = view.byteLength;
   let offset = 2;
@@ -562,6 +595,7 @@ function getExifOrientation(buffer) {
     else offset += view.getUint16(offset, false);
   }
   return 1;
+  } catch(_) { return 1; }
 }
 
 function applyExifOrientation(ctx, orientation, w, h) {
