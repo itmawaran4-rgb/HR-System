@@ -959,46 +959,62 @@ function renderRequests() {
   };
 
   listEl.innerHTML = filtered.map(r => {
-    // Debug: log the id to console
     const rid = String(r.id || r.at || r.AT || '').trim();
     let extra = {};
     try { extra = JSON.parse(r.extra || '{}'); } catch(e) {}
-    const isPending = r.status === 'pending';
+    const isPending   = r.status === 'pending';
     const borderColor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
-    return `<div class="card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
-      <div style="padding:16px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-          <div>
-            <div style="font-weight:700;font-size:15px">${escapeHtml(r.name||'—')}</div>
-            <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId||'')} · ${r.date||''}</div>
+    const photoSrc    = extra.photoBase64 || extra.photoUrl || '';
+
+    const photoHtml = photoSrc ? `
+      <div class="req-photo-wrap">
+        <img src="${photoSrc}"
+          class="req-photo-thumb"
+          onclick="openPhotoLightbox(this.src)"
+          title="Click to enlarge"
+          onerror="this.closest('.req-photo-wrap').innerHTML='<div style=\\'font-size:13px;color:var(--text-muted);padding:8px\\'>📷 وێنەکە بەردەست نیە</div>'">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:center">📷 کلیک بکە بۆ گەورەکردن</div>
+      </div>` : '';
+
+    return `<div class="card req-card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
+      <div class="req-inner">
+        <div class="req-body">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+            <div>
+              <div style="font-weight:700;font-size:15px">${escapeHtml(r.name||'—')}</div>
+              <div style="color:var(--text-muted);font-size:13px">${escapeHtml(r.employeeId||'')} · ${r.date||''}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              ${statusBadge(r.status)}
+              <span class="badge badge-blue">${typeLabel(r.type)}</span>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            ${statusBadge(r.status)}
-            <span class="badge badge-blue">${typeLabel(r.type)}</span>
-          </div>
+          <div style="color:var(--text-secondary);font-size:14px;margin-bottom:10px">${escapeHtml(r.message||'—')}</div>
+          ${extra.note ? `<div style="font-size:13px;background:rgba(245,158,11,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:var(--text-primary)">📝 ${escapeHtml(extra.note)}</div>` : ''}
+          ${isPending && rid ? `
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-primary btn-sm" onclick="doApproveReq('${rid}')">✅ Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="doRejectReq('${rid}')">❌ Reject</button>
+          </div>` : (isPending ? '<div style="color:red;font-size:12px">⚠️ Missing request ID</div>' : '')}
         </div>
-        <div style="color:var(--text-secondary);font-size:14px;margin-bottom:10px">
-          ${escapeHtml(r.message||'—')}
-        </div>
-        ${extra.note ? `<div style="font-size:13px;background:rgba(245,158,11,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:var(--text-primary)">📝 ${escapeHtml(extra.note)}</div>` : ''}
-        ${(extra.photoBase64 || extra.photoUrl) ? `
-        <div style="margin-bottom:12px">
-          <img src="${extra.photoBase64 || extra.photoUrl}"
-            style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);cursor:pointer"
-            onclick="window.open(this.src,'_blank')"
-            title="کلیک بکە بۆ گەورەکردن"
-            onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-          <div style="display:none;font-size:13px;color:var(--text-muted);padding:8px">📷 وێنەکە بەردەست نیە</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">📷 وێنەی شوێن — کلیک بکە بۆ گەورەکردن</div>
-        </div>` : ''}
-        ${isPending && rid ? `
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn btn-primary btn-sm" onclick="doApproveReq('${rid}')">✅ Approve</button>
-          <button class="btn btn-danger btn-sm" onclick="doRejectReq('${rid}')">❌ Reject</button>
-        </div>` : (isPending ? '<div style="color:red;font-size:12px">⚠️ Missing request ID</div>' : '')}
+        ${photoHtml}
       </div>
     </div>`;
   }).join('');
+}
+
+function openPhotoLightbox(src) {
+  const lb = document.getElementById('photoLightbox');
+  const img = document.getElementById('lightboxImg');
+  if (!lb || !img) return;
+  img.src = src;
+  lb.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closePhotoLightbox() {
+  const lb = document.getElementById('photoLightbox');
+  if (lb) lb.style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 async function doApproveReq(id) {
