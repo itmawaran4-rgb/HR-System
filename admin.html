@@ -499,6 +499,55 @@
   </div>
 </div>
 
+<!-- Photo Lightbox -->
+<div id="photoLightbox" onclick="closePhotoLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out;padding:20px">
+  <button onclick="closePhotoLightbox()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+  <img id="lightboxImg" src="" onclick="event.stopPropagation()" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+</div>
+
+<style>
+/* ── Request card layout ── */
+.req-card .req-inner {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px;
+  align-items: flex-start;
+}
+.req-body {
+  flex: 1;
+  min-width: 0;
+}
+.req-photo-wrap {
+  flex-shrink: 0;
+  width: 160px;
+}
+.req-photo-thumb {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: zoom-in;
+  transition: opacity 0.2s;
+}
+.req-photo-thumb:hover { opacity: 0.85; }
+
+/* Mobile: photo goes below */
+@media (max-width: 640px) {
+  .req-card .req-inner {
+    flex-direction: column;
+  }
+  .req-photo-wrap {
+    width: 100%;
+  }
+  .req-photo-thumb {
+    width: 100%;
+    height: 200px;
+  }
+}
+</style>
+
 <script src="assets/script.js?v=4"></script>
 <script src="assets/admin.js"></script>
 <script>
