@@ -540,16 +540,38 @@ function onPhotoSelected(event) {
         ctx.drawImage(img, 0, 0, swapped ? dh : dw, swapped ? dw : dh);
         ctx.restore();
 
-        // بعض Safari القديم يتجاهل 'image/jpeg' ويرجع PNG — نتحقق صراحةً
-        let result = canvas.toDataURL('image/jpeg', 0.3);
+        // ── ضغط متعدد المراحل — الهدف: أقل من 50KB ──
+        const MAX_KB = 50;
+        let result, quality = 0.6;
+
+        if (!result || !result.startsWith('data:image/jpeg')) {
+          // أول محاولة
+          result = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        // إذا Safari رجع PNG أو الحجم كبير، نضغط أكثر
         if (!result.startsWith('data:image/jpeg')) {
-          // Safari رجع PNG — نضغط أكثر عبر تصغير الحجم
-          const canvas2 = document.createElement('canvas');
-          const scale   = 0.5;
-          canvas2.width  = Math.round(dw * scale);
-          canvas2.height = Math.round(dh * scale);
-          canvas2.getContext('2d').drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
-          result = canvas2.toDataURL('image/png');
+          // Safari لا يدعم JPEG — نصغّر Canvas تدريجياً
+          let scale = 1.0;
+          let c2 = canvas;
+          let sizKB = result.length * 0.75 / 1024;
+          while (sizKB > MAX_KB && scale > 0.1) {
+            scale -= 0.15;
+            c2 = document.createElement('canvas');
+            c2.width  = Math.max(1, Math.round(dw * scale));
+            c2.height = Math.max(1, Math.round(dh * scale));
+            c2.getContext('2d').drawImage(canvas, 0, 0, c2.width, c2.height);
+            result = c2.toDataURL('image/png');
+            sizKB  = result.length * 0.75 / 1024;
+          }
+        } else {
+          // JPEG — نخفض الجودة حتى نصل للهدف
+          let sizKB = result.length * 0.75 / 1024;
+          while (sizKB > MAX_KB && quality > 0.05) {
+            quality = Math.max(0.05, quality - 0.08);
+            result  = canvas.toDataURL('image/jpeg', quality);
+            sizKB   = result.length * 0.75 / 1024;
+          }
         }
 
         _outsidePhotoBase64 = result;
