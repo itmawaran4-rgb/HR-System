@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR MAWARAN — مووچەکەم</title>
+  <title>HR MAWARAN — پرۆفایلەکەم</title>
   <link rel="stylesheet" href="assets/style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f59e0b">
@@ -22,14 +22,41 @@
     .page-header { text-align: right; }
     .card-header { flex-direction: row-reverse; }
     .card-title { flex-direction: row-reverse; }
-    .salary-summary { direction: rtl; }
-    .salary-card { text-align: right; }
     @media (max-width: 768px) {
       .sidebar { right: 0; left: auto; transform: translateX(110%); }
       .sidebar.open { transform: translateX(0); }
       .main-content { margin-right: 0; }
     }
     .company-logo-img { height: 36px; width: auto; object-fit: contain; }
+
+    .profile-hero {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .profile-avatar-big {
+      width: 88px; height: 88px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-500), #f97316);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px; font-weight: 700; color: #000;
+      margin: 0 auto 16px;
+    }
+    .profile-name  { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .profile-pos   { font-size: 14px; color: var(--text-muted); }
+
+    .info-list { display: flex; flex-direction: column; gap: 0; }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+      gap: 12px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--text-muted); font-size: 13px; flex-shrink: 0; }
+    .info-value { font-weight: 600; color: var(--text-primary); font-size: 14px; text-align: left; }
   </style>
 </head>
 <body>
@@ -52,10 +79,10 @@
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label">مینیوی سەرەکی</div>
-    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
     <a class="nav-item" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
     <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
-    <a class="nav-item active" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
     <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
   </nav>
   <div class="sidebar-footer">
@@ -68,57 +95,55 @@
     <div class="topbar-avatar" id="topbarAvatar">?</div>
     <span class="topbar-date" id="topbarDate"></span>
     <div class="topbar-spacer"></div>
-    <span class="topbar-title">مووچەکەم</span>
+    <span class="topbar-title">پرۆفایلەکەم</span>
     <button class="topbar-hamburger" id="hamburger">☰</button>
   </header>
   <main class="page-content">
-    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;flex-direction:row-reverse">
-      <button class="btn btn-secondary btn-sm" onclick="loadSalary()">🔄 نوێکردنەوە</button>
-      <div style="text-align:right">
-        <h1 class="page-title">گەڕانەوەی مووچە</h1>
-        <p class="page-subtitle">بۆنەس، کەمکردنەوە و تێبینییەکانی HR</p>
-      </div>
+    <div class="page-header" style="text-align:right">
+      <h1 class="page-title">پرۆفایلەکەم</h1>
+      <p class="page-subtitle">زانیارییەکانی تایبەت بە تۆ</p>
     </div>
 
-    <!-- Summary -->
-    <div class="salary-summary" id="salarySummary">
-      <div class="salary-card">
-        <div class="salary-amount positive" id="totalBonuses">—</div>
-        <div class="salary-label">کۆی بۆنەس</div>
-      </div>
-      <div class="salary-card">
-        <div class="salary-amount negative" id="totalDeductions">—</div>
-        <div class="salary-label">کۆی کەمکردنەوە</div>
-      </div>
-      <div class="salary-card">
-        <div class="salary-amount neutral" id="netAmount">—</div>
-        <div class="salary-label">کۆی نەت (بۆنەس - کەمکردنەوە)</div>
-      </div>
+    <!-- Hero -->
+    <div class="profile-hero">
+      <div class="profile-avatar-big" id="profileAvatar">?</div>
+      <div class="profile-name" id="profileName">—</div>
+      <div class="profile-pos" id="profilePos">—</div>
     </div>
 
-    <!-- Table -->
+    <!-- Info Card -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <div class="card-title-icon gold">💰</div>
-          تۆمارەکانی مووچە
+          <div class="card-title-icon gold">👤</div>
+          زانیاری کارمەند
         </div>
       </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>بەروار</th>
-              <th>بۆنەس</th>
-              <th>کەمکردنەوە</th>
-              <th>نەت</th>
-              <th>تێبینی</th>
-            </tr>
-          </thead>
-          <tbody id="salaryTableBody">
-            <tr><td colspan="5" class="loading-rows">داتای مووچە بارکراوەن...</td></tr>
-          </tbody>
-        </table>
+      <div class="info-list">
+        <div class="info-row">
+          <span class="info-label">🪪 ناسنامە</span>
+          <span class="info-value" id="pId">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">🏢 بەش</span>
+          <span class="info-value" id="pDept">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">💼 پۆست</span>
+          <span class="info-value" id="pPosition">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">📞 تەلەفۆن</span>
+          <span class="info-value" id="pPhone">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">📧 ئیمەیڵ</span>
+          <span class="info-value" id="pEmail">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">📅 بەرواری کارەکە</span>
+          <span class="info-value" id="pHireDate">—</span>
+        </div>
       </div>
     </div>
   </main>
@@ -126,51 +151,25 @@
 
 <script src="assets/script.js?v=4"></script>
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
-  requireAuth(false);
-  await loadSalary();
-});
+document.addEventListener('DOMContentLoaded', () => {
+  const user = requireAuth(false);
+  if (!user) return;
 
-async function loadSalary() {
-  const user = Session.get();
-  const tbody = document.getElementById('salaryTableBody');
-  tbody.innerHTML = `<tr><td colspan="5" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>بارکراوە...</td></tr>`;
-  try {
-    const res = await API.getSalary(user.id);
-    if (!res.success) throw new Error(res.message);
-    const records = res.data || [];
-    let totalBonus = 0, totalDeduction = 0;
-    records.forEach(r => {
-      totalBonus     += parseFloat(r.bonus)     || 0;
-      totalDeduction += parseFloat(r.deduction) || 0;
-    });
-    const net = totalBonus - totalDeduction;
-    document.getElementById('totalBonuses').textContent    = `+${formatCurrency(totalBonus)}`;
-    document.getElementById('totalDeductions').textContent = `-${formatCurrency(totalDeduction)}`;
-    const netEl = document.getElementById('netAmount');
-    netEl.textContent = (net >= 0 ? '+' : '') + formatCurrency(net);
-    netEl.className = `salary-amount ${net >= 0 ? 'positive' : 'negative'}`;
-    if (!records.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">هیچ تۆمارێکی مووچە نیە</div><div class="empty-desc">پەیوەندی بە HR بکە بۆ زانیاری زیاتر</div></div></td></tr>`;
-      return;
-    }
-    const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
-    tbody.innerHTML = sorted.map(r => {
-      const bonus = parseFloat(r.bonus) || 0, deduction = parseFloat(r.deduction) || 0;
-      const rowNet = bonus - deduction;
-      return `<tr>
-        <td class="bold">${formatDate(r.date)}</td>
-        <td class="text-green font-bold">+${formatCurrency(bonus)}</td>
-        <td class="text-red font-bold">-${formatCurrency(deduction)}</td>
-        <td class="${rowNet >= 0 ? 'text-green' : 'text-red'} font-bold">${rowNet >= 0 ? '+' : ''}${formatCurrency(rowNet)}</td>
-        <td class="text-muted">${escapeHtml(r.notes || '—')}</td>
-      </tr>`;
-    }).join('');
-  } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="5" class="loading-rows text-red">${e.message}</td></tr>`;
-    Toast.error('هەڵە لە بارکردنی مووچە', e.message);
-  }
-}
+  // Fill avatar
+  const initials = getInitials(user.name || user.id || '?');
+  document.getElementById('profileAvatar').textContent = initials;
+  document.getElementById('topbarAvatar').textContent  = initials;
+
+  // Fill info
+  document.getElementById('profileName').textContent = user.name       || '—';
+  document.getElementById('profilePos').textContent  = (user.position  || '') + (user.department ? ' · ' + user.department : '');
+  document.getElementById('pId').textContent         = user.id         || '—';
+  document.getElementById('pDept').textContent       = user.department || '—';
+  document.getElementById('pPosition').textContent   = user.position   || '—';
+  document.getElementById('pPhone').textContent      = user.phone      || '—';
+  document.getElementById('pEmail').textContent      = user.email      || '—';
+  document.getElementById('pHireDate').textContent   = formatDate(user.hireDate) || '—';
+});
 </script>
 </body>
 </html>
