@@ -70,7 +70,8 @@ const API = {
   async getRequests(filters = {})   { return this.request('getRequests', filters); },
   async addRequest(data)            { return this.postRequest('addRequest', data); },
   async approveRequest(data)        { return this.request('approveRequest', data); },
-  async rejectRequest(data)         { return this.request('rejectRequest', data); }
+  async rejectRequest(data)         { return this.request('rejectRequest', data); },
+  async getLeaves(filters = {})     { return this.request('getLeaves', filters); }
 };
 
 const Toast = {
