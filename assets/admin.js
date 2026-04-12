@@ -70,7 +70,8 @@ function showAdminTab(tabId, loadFn) {
       loadReports,
       loadOverview,
       populateSalaryEmployeeFilter,
-      loadRequests
+      loadRequests,
+      loadLeaveBalance
     };
     if (loaders[loadFn]) loaders[loadFn]();
   }
@@ -998,6 +999,31 @@ function renderRequests() {
           </div>
           <div style="color:var(--text-secondary);font-size:14px;margin-bottom:10px">${escapeHtml(r.message||'—')}</div>
           ${extra.note ? `<div style="font-size:13px;background:rgba(245,158,11,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:var(--text-primary)">📝 ${escapeHtml(extra.note)}</div>` : ''}
+          ${isPending && rid && String(r.type||'').startsWith('leave') ? (() => {
+            const isHourly = (extra.leaveType || '') === 'hourly';
+            const defDays  = extra.days  !== undefined ? extra.days  : '';
+            const defHours = extra.hours !== undefined ? extra.hours
+              : (extra.timeFrom && extra.timeTo ? (() => {
+                  const [h1,m1]=(extra.timeFrom||'00:00').split(':').map(Number);
+                  const [h2,m2]=(extra.timeTo  ||'00:00').split(':').map(Number);
+                  return Math.max(0,((h2*60+m2)-(h1*60+m1))/60).toFixed(2);
+                })() : '');
+            return `<div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+              <div style="font-size:12px;color:var(--gold-500);margin-bottom:8px;font-weight:600">✏️ Edit duration before approving (8h = 1 day)</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <label style="font-size:12px;color:var(--text-muted);display:flex;flex-direction:column;gap:4px">
+                  Days
+                  <input type="number" id="ovDays_${rid}" value="${defDays}" min="0" step="0.5"
+                    style="width:80px;padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:13px">
+                </label>
+                <label style="font-size:12px;color:var(--text-muted);display:flex;flex-direction:column;gap:4px">
+                  Hours
+                  <input type="number" id="ovHours_${rid}" value="${defHours}" min="0" step="0.5"
+                    style="width:80px;padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:13px">
+                </label>
+              </div>
+            </div>`;
+          })() : ''}
           ${isPending && rid ? `
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn btn-primary btn-sm" onclick="doApproveReq('${rid}')">✅ Approve</button>
@@ -1106,9 +1132,17 @@ function closePhotoLightbox() {
 async function doApproveReq(id) {
   if (!id) { Toast.error('Error', 'Missing request ID'); return; }
   if (!window.confirm('Approve this request?')) return;
+
+  // Read override duration if fields exist (leave requests)
+  const daysEl  = document.getElementById('ovDays_'  + id);
+  const hoursEl = document.getElementById('ovHours_' + id);
+  const payload = { id };
+  if (daysEl  && daysEl.value  !== '') payload.overrideDays  = parseFloat(daysEl.value)  || 0;
+  if (hoursEl && hoursEl.value !== '') payload.overrideHours = parseFloat(hoursEl.value) || 0;
+
   try {
     Loader.show('Approving...');
-    const res = await API.approveRequest({ id });
+    const res = await API.approveRequest(payload);
     if (res.success) { Toast.success('Approved ✅'); await loadRequests(); }
     else throw new Error(res.message || JSON.stringify(res));
   } catch (e) {
@@ -1129,6 +1163,53 @@ async function doRejectReq(id) {
     Toast.error('Failed', e.message);
     console.error('rejectRequest error:', e);
   } finally { Loader.hide(); }
+}
+
+/* ══════════════════════════════════════════════
+   ▌ LEAVE BALANCE (Admin)
+   ══════════════════════════════════════════════ */
+async function loadLeaveBalance() {
+  const tbody = document.getElementById('leaveBalanceBody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>`;
+  try {
+    const [empRes, lvRes] = await Promise.all([API.getEmployees(), API.getLeaves({})]);
+    if (!empRes.success) throw new Error(empRes.message);
+    if (!lvRes.success)  throw new Error(lvRes.message);
+
+    const employees = (empRes.data || []).filter(e => e.role !== 'admin');
+    const leaves    = lvRes.data || [];
+
+    if (!employees.length) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🌴</div><div class="empty-title">No employees</div></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = employees.map(emp => {
+      const empLeaves = leaves.filter(l =>
+        String(l.employeeId || '').toLowerCase() === String(emp.id || '').toLowerCase()
+      );
+      const annualDays  = empLeaves.filter(l => l.leaveType === 'annual').reduce((s,l) => s + (parseFloat(l.days)||0), 0);
+      const sickDays    = empLeaves.filter(l => l.leaveType === 'sick').reduce((s,l)   => s + (parseFloat(l.days)||0), 0);
+      const hourlyHours = empLeaves.filter(l => l.leaveType === 'hourly').reduce((s,l) => s + (parseFloat(l.hours)||0), 0);
+      const totalDays   = empLeaves.reduce((s,l) => s + (parseFloat(l.days)||0), 0);
+      const totalHours  = empLeaves.reduce((s,l) => s + (parseFloat(l.hours)||0), 0);
+
+      const fmt = n => n > 0 ? `<strong>${n.toFixed(1).replace('.0','')}</strong>` : '<span style="color:var(--text-muted)">—</span>';
+      return `<tr>
+        <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
+        <td><span class="badge badge-blue">${escapeHtml(emp.department||'—')}</span></td>
+        <td>${fmt(annualDays)}</td>
+        <td>${fmt(sickDays)}</td>
+        <td>${fmt(hourlyHours)}</td>
+        <td><span class="badge badge-gold">${totalDays > 0 ? totalDays.toFixed(1).replace('.0','') + ' days' : '—'}</span></td>
+        <td><span class="badge badge-blue">${totalHours > 0 ? totalHours.toFixed(1).replace('.0','') + ' hrs' : '—'}</span></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" class="loading-rows text-red">${e.message}</td></tr>`;
+    Toast.error('Failed', e.message);
+  }
 }
 
 /* ══════════════════════════════════════════════
