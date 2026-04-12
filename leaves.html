@@ -91,18 +91,28 @@
       <button class="btn btn-primary" onclick="openModal('leaveModal')">➕ داواکاری مۆڵەتی نوێ</button>
     </div>
 
-    <!-- Year summary -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px" id="leaveSummary">
+    <!-- Leave Balance -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px">
+      <div class="leave-year-card" style="border:2px solid var(--gold-500)">
+        <div class="leave-count" id="leaveTotalDays">—</div>
+        <div class="leave-count-label">📅 کۆی ڕۆژەکانی مۆڵەت</div>
+      </div>
+      <div class="leave-year-card" style="border:2px solid #3b82f6">
+        <div class="leave-count" id="leaveTotalHours" style="color:#3b82f6">—</div>
+        <div class="leave-count-label">⏰ کۆی کاتژمێرەکان</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
       <div class="leave-year-card">
-        <div class="leave-count" id="leaveApproved">—</div>
-        <div class="leave-count-label">✅ مۆڵەتی مۆڵەتکراو</div>
+        <div style="font-size:28px;font-weight:700;color:var(--gold-500)" id="leaveApproved">—</div>
+        <div class="leave-count-label">✅ مۆڵەتکراو</div>
       </div>
       <div class="leave-year-card">
-        <div class="leave-count" id="leavePending" style="color:var(--gold-500)">—</div>
+        <div style="font-size:28px;font-weight:700;color:var(--gold-500)" id="leavePending">—</div>
         <div class="leave-count-label">⏳ چاوەڕێی مۆڵەت</div>
       </div>
       <div class="leave-year-card">
-        <div class="leave-count" id="leaveRejected" style="color:var(--rose-500,#f43f5e)">—</div>
+        <div style="font-size:28px;font-weight:700;color:var(--rose-500,#f43f5e)" id="leaveRejected">—</div>
         <div class="leave-count-label">❌ ڕەتکراوەتەوە</div>
       </div>
     </div>
@@ -219,19 +229,29 @@ async function loadLeaves() {
   const listEl = document.getElementById('leavesList');
   listEl.innerHTML = `<div class="loading-rows"><div class="spinner" style="margin:0 auto 12px"></div>بارکراوەن...</div>`;
   try {
-    const res = await API.getRequests({ employeeId: user.id, type: 'leave' });
-    if (!res.success) throw new Error(res.message);
+    // Fetch requests + approved leave balance in parallel
+    const [reqRes, lvRes] = await Promise.all([
+      API.getRequests({ employeeId: user.id, type: 'leave' }),
+      API.getLeaves({ employeeId: user.id })
+    ]);
+
+    // ── Balance from Leaves sheet ──
+    if (lvRes.success) {
+      const lvData = lvRes.data || [];
+      const totalDays  = lvData.reduce((s, r) => s + (parseFloat(r.days)  || 0), 0);
+      const totalHours = lvData.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0);
+      document.getElementById('leaveTotalDays').textContent  = totalDays.toFixed(1).replace('.0','');
+      document.getElementById('leaveTotalHours').textContent = totalHours.toFixed(1).replace('.0','');
+    }
+
+    if (!reqRes.success) throw new Error(reqRes.message);
     const year = new Date().getFullYear();
-    const all  = res.data || [];
+    const all  = reqRes.data || [];
     const thisYear = all.filter(r => r.date && r.date.startsWith(String(year)));
 
-    const approved = thisYear.filter(r => r.status === 'approved').length;
-    const pending  = thisYear.filter(r => r.status === 'pending').length;
-    const rejected = thisYear.filter(r => r.status === 'rejected').length;
-
-    document.getElementById('leaveApproved').textContent = approved;
-    document.getElementById('leavePending').textContent  = pending;
-    document.getElementById('leaveRejected').textContent = rejected;
+    document.getElementById('leaveApproved').textContent = thisYear.filter(r => r.status === 'approved').length;
+    document.getElementById('leavePending').textContent  = thisYear.filter(r => r.status === 'pending').length;
+    document.getElementById('leaveRejected').textContent = thisYear.filter(r => r.status === 'rejected').length;
 
     if (!all.length) {
       listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🌴</div><div class="empty-title">هیچ داواکاریەکی مۆڵەت نیە</div><div class="empty-desc">داواکاری مۆڵەتی نوێ زیاد بکە</div></div>`;
@@ -242,19 +262,21 @@ async function loadLeaves() {
     listEl.innerHTML = sorted.map(r => {
       let extra = {};
       try { extra = JSON.parse(r.extra || '{}'); } catch(e){}
-      const from = extra.from || r.date || '';
-      const to   = extra.to   || r.date || '';
+      const from = extra.from || extra.date || r.date || '';
+      const to   = extra.to   || extra.date || r.date || '';
+      const daysLabel  = extra.days  ? ` · ${extra.days} ڕۆژ`   : '';
+      const hoursLabel = extra.timeFrom ? ` · ${extra.timeFrom} → ${extra.timeTo}` : '';
       const statusBadge = r.status === 'approved'
         ? '<span class="badge badge-green">✅ مۆڵەتکراو</span>'
         : r.status === 'rejected'
-          ? '<span class="badge badge-muted" style="background:var(--rose-500,#f43f5e)20;color:var(--rose-500,#f43f5e)">❌ ڕەتکراوەتەوە</span>'
+          ? '<span class="badge badge-muted" style="background:rgba(244,63,94,0.15);color:#f43f5e">❌ ڕەتکراوەتەوە</span>'
           : '<span class="badge badge-gold">⏳ چاوەڕێی مۆڵەت</span>';
       return `<div class="request-card">
         <div class="request-card-header">
           <div>${statusBadge}</div>
-          <div style="font-weight:600">${leaveTypeLabels[r.type?.split('_')[1]] || leaveTypeLabels[r.extra] || r.type || '—'}</div>
+          <div style="font-weight:600">${leaveTypeLabels[extra.leaveType] || r.type || '—'}</div>
         </div>
-        <div class="request-dates">📅 ${from} → ${to}</div>
+        <div class="request-dates">📅 ${from}${to && to !== from ? ' → ' + to : ''}${daysLabel}${hoursLabel}</div>
         <div class="request-reason">${escapeHtml(r.message || '—')}</div>
       </div>`;
     }).join('');
