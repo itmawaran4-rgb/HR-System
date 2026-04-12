@@ -49,6 +49,9 @@
       <span class="nav-icon">📋</span> Requests
       <span class="badge badge-gold" id="pendingRequestsBadge" style="margin-right:auto;font-size:11px"></span>
     </a>
+    <a class="nav-item" data-tab="tab-leaves" data-load="loadLeaveBalance">
+      <span class="nav-icon">🌴</span> Leave Balance
+    </a>
   </nav>
 
   <div class="sidebar-footer">
@@ -368,6 +371,42 @@
       </div>
     </div>
 
+    <!-- ══════════════════════════════
+         TAB: LEAVE BALANCE
+         ══════════════════════════════ -->
+    <div class="admin-tab-content" id="tab-leaves">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">Leave Balance</h1>
+          <p class="page-subtitle">Approved leave days & hours per employee</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadLeaveBalance()">🔄 Refresh</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><div class="card-title-icon gold">🌴</div>All Employees — Leave Summary</div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Annual Days</th>
+                <th>Sick Days</th>
+                <th>Hourly Hours</th>
+                <th>Total Days</th>
+                <th>Total Hours</th>
+              </tr>
+            </thead>
+            <tbody id="leaveBalanceBody">
+              <tr><td colspan="7" class="loading-rows">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main><!-- /page-content -->
 </div><!-- /main-content -->
 
@@ -511,12 +550,12 @@
       <div class="form-group">
         <label class="form-label">Check-In Time</label>
         <input type="time" class="form-control" id="attEditIn" step="1">
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Leave it blank if there is nothing.</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">اتركه فارغاً إذا لا يوجد</div>
       </div>
       <div class="form-group">
         <label class="form-label">Check-Out Time</label>
         <input type="time" class="form-control" id="attEditOut" step="1">
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Leave it blank if there is nothing.</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">اتركه فارغاً إذا لا يوجد</div>
       </div>
     </div>
     <div class="modal-footer">
