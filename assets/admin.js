@@ -180,6 +180,7 @@ async function loadOverview() {
     AdminState.employees  = empRes.data || [];
     // Normalize attendance records
     AdminState.attendance = (attRes.data || []).map(r => ({
+      id:         String(r.id || r.at || r.AT || '').trim(),
       employeeId: String(r.employeeId || r.EmployeeID || '').trim(),
       name:       String(r.name || r.Name || '').trim(),
       date:       normDate(r.date || r.Date || ''),
@@ -223,9 +224,9 @@ function renderTodayAttendance() {
           ? '<span class="badge badge-blue">Complete</span>'
           : '<span class="badge badge-gold">In Progress</span>';
       const duration = (hasIn && hasOut) ? calcDuration(rec.checkIn, rec.checkOut) : '—';
-      // تحديد التأخر: بعد 9:10
+      // تحديد التأخر: بعد 9:15
       const inMinsToday = hasIn ? timeToMins(rec.checkIn) : null;
-      const LATE_MINS   = 9 * 60 + 10; // 9:10
+      const LATE_MINS   = 9 * 60 + 15; // 9:15
       const isLate      = inMinsToday !== null && inMinsToday > LATE_MINS;
       const checkInBadge = hasIn
         ? `<span class="badge" style="background:${isLate ? 'rgba(244,63,94,0.15)' : 'rgba(34,197,94,0.15)'};color:${isLate ? '#f43f5e' : '#22c55e'};font-weight:${isLate ? '700' : '400'}">${rec.checkIn}${isLate ? ' ⚠️' : ''}</span>`
@@ -375,6 +376,7 @@ function renderEmpDetail() {
           : '<span class="badge badge-muted">Absent</span>';
 
     const rowStyle = isWeekend ? 'opacity:0.4' : '';
+    const recId = rec?.id || '';
     detailRows.push(`<tr style="${rowStyle}">
       <td class="bold">${dateStr}</td>
       <td>${dayName}</td>
@@ -382,6 +384,11 @@ function renderEmpDetail() {
       <td><span class="badge badge-blue">${rec?.checkOut || '—'}</span></td>
       <td>${rec ? calcDuration(rec.checkIn, rec.checkOut) : '—'}</td>
       <td>${status}</td>
+      <td>
+        ${!isWeekend ? `<button class="btn btn-ghost btn-sm btn-icon" title="${rec ? 'Edit' : 'Add'}"
+          onclick="openAttEdit('${escapeHtml(emp.id)}','${escapeHtml(emp.name)}','${dateStr}','${recId}','${rec?.checkIn||''}','${rec?.checkOut||''}')"
+          >${rec ? '✏️' : '➕'}</button>` : ''}
+      </td>
     </tr>`);
   }
 
@@ -1001,6 +1008,85 @@ function renderRequests() {
       </div>
     </div>`;
   }).join('');
+}
+
+/* ══════════════════════════════════════════════
+   ▌ ATTENDANCE EDIT / ADD (Admin)
+   ══════════════════════════════════════════════ */
+let _attEditState = {};
+
+function openAttEdit(empId, empName, date, recId, checkIn, checkOut) {
+  _attEditState = { empId, empName, date, recId };
+  const isEdit = !!recId;
+  document.getElementById('attEditTitle').textContent = isEdit ? 'Edit Attendance' : 'Add Attendance';
+  document.getElementById('attEditMeta').textContent  = `${empName} (${empId}) — ${date}`;
+
+  // time inputs need HH:MM format (trim seconds)
+  const toHHMM = t => t ? t.substring(0, 5) : '';
+  document.getElementById('attEditIn').value  = toHHMM(checkIn);
+  document.getElementById('attEditOut').value = toHHMM(checkOut);
+  openModal('attEditModal');
+}
+
+async function saveAttEdit() {
+  const btn  = document.getElementById('attEditSaveBtn');
+  const inV  = document.getElementById('attEditIn').value.trim();
+  const outV = document.getElementById('attEditOut').value.trim();
+  const { empId, empName, date, recId } = _attEditState;
+
+  if (!inV && !outV) {
+    Toast.warning('Validation', 'Enter at least Check-In or Check-Out time.');
+    return;
+  }
+
+  // Convert HH:MM → HH:MM:00
+  const toHMS = t => t ? t + ':00' : '';
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> Saving...';
+  try {
+    let res;
+    if (recId) {
+      // Update existing record
+      res = await API.request('updateAttendance', {
+        id: recId,
+        checkIn:  toHMS(inV),
+        checkOut: toHMS(outV)
+      });
+    } else {
+      // Add new record
+      res = await API.request('addAttendance', {
+        employeeId: empId,
+        name:       empName,
+        date,
+        checkIn:  toHMS(inV),
+        checkOut: toHMS(outV)
+      });
+    }
+    if (!res.success) throw new Error(res.message);
+    Toast.success('Saved ✅', `Attendance updated for ${empName}`);
+    closeModal('attEditModal');
+
+    // Refresh data
+    const [empRes, attRes] = await Promise.all([API.getEmployees(), API.getAttendance({})]);
+    if (attRes.success) {
+      AdminState.attendance = (attRes.data || []).map(r => ({
+        id:         String(r.id || r.at || r.AT || '').trim(),
+        employeeId: String(r.employeeId || r.EmployeeID || '').trim(),
+        name:       String(r.name || r.Name || '').trim(),
+        date:       normDate(r.date || r.Date || ''),
+        checkIn:    normTime(r.checkIn || r.CheckIn || ''),
+        checkOut:   normTime(r.checkOut || r.CheckOut || '')
+      }));
+    }
+    renderEmpDetail();
+    renderTodayAttendance();
+  } catch(e) {
+    Toast.error('Save Failed', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 Save';
+  }
 }
 
 function openPhotoLightbox(src) {
