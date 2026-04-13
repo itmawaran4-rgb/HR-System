@@ -1212,9 +1212,72 @@ async function loadLeaveBalance() {
   }
 }
 
-/* ══════════════════════════════════════════════
-   ▌ UTIL — Set inner HTML by element ID
-   ══════════════════════════════════════════════ */
+function openAddLeave() {
+  // Populate employee select
+  const sel = document.getElementById('addLeaveEmpId');
+  sel.innerHTML = '<option value="">Select Employee</option>' +
+    AdminState.employees
+      .filter(e => e.role !== 'admin')
+      .map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.name)} (${escapeHtml(e.id)})</option>`)
+      .join('');
+
+  // Default dates to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('addLeaveFrom').value  = today;
+  document.getElementById('addLeaveTo').value    = today;
+  document.getElementById('addLeaveDays').value  = '';
+  document.getElementById('addLeaveHours').value = '';
+  document.getElementById('addLeaveNotes').value = '';
+  openModal('addLeaveModal');
+}
+
+async function saveManualLeave() {
+  const empId = document.getElementById('addLeaveEmpId').value.trim();
+  const type  = document.getElementById('addLeaveType').value;
+  const from  = document.getElementById('addLeaveFrom').value;
+  const to    = document.getElementById('addLeaveTo').value || from;
+  let days    = parseFloat(document.getElementById('addLeaveDays').value)  || 0;
+  let hours   = parseFloat(document.getElementById('addLeaveHours').value) || 0;
+  const notes = document.getElementById('addLeaveNotes').value.trim();
+
+  if (!empId) { Toast.warning('Validation', 'Please select an employee.'); return; }
+  if (!from)  { Toast.warning('Validation', 'From date is required.'); return; }
+  if (!days && !hours) { Toast.warning('Validation', 'Enter Days or Hours.'); return; }
+
+  // Auto-calculate missing field
+  if (days && !hours) hours = days * 8;
+  if (hours && !days) days  = hours / 8;
+
+  const emp  = AdminState.employees.find(e => e.id === empId);
+  const name = emp ? emp.name : empId;
+  const btn  = document.getElementById('addLeaveSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-sm"></span> Saving...';
+
+  try {
+    const res = await API.request('addLeave', {
+      employeeId: empId,
+      name,
+      leaveType: type,
+      days,
+      hours,
+      from,
+      to,
+      notes
+    });
+    if (!res.success) throw new Error(res.message);
+    Toast.success('Saved ✅', `Leave added for ${name}`);
+    closeModal('addLeaveModal');
+    loadLeaveBalance();
+  } catch(e) {
+    Toast.error('Save Failed', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '💾 Save';
+  }
+}
+
+
 function setEl(id, html) {
   const el = document.getElementById(id);
   if (el) el.innerHTML = html;
