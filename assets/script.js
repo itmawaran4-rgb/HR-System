@@ -71,7 +71,8 @@ const API = {
   async addRequest(data)            { return this.postRequest('addRequest', data); },
   async approveRequest(data)        { return this.request('approveRequest', data); },
   async rejectRequest(data)         { return this.request('rejectRequest', data); },
-  async getLeaves(filters = {})     { return this.request('getLeaves', filters); }
+  async getLeaves(filters = {})     { return this.request('getLeaves', filters); },
+  async addLeave(data)              { return this.request('addLeave', data); }
 };
 
 const Toast = {
