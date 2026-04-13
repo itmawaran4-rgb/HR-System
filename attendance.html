@@ -183,7 +183,7 @@
       </div>
       <div class="form-group">
         <label class="form-label" style="text-align:right;display:block">
-          وێنەی شوێن <span style="color:#f43f5e">*</span>
+          وێنەی شوێن <span style="color:var(--text-muted);font-size:12px">*</span>
         </label>
         <!-- Camera capture only (no gallery) -->
         <input type="file" id="outsidePhoto" accept="image/*" capture="environment"
@@ -651,7 +651,6 @@ async function sendOutsideRequest() {
 
   const note  = document.getElementById('outsideNote').value.trim();
   if (!note) { Toast.warning('تێبینی', 'تکایە هۆکارەکە بنووسە'); return; }
-  if (!_outsidePhotoBase64) { Toast.warning('تێبینی', 'تکایە وێنەیەک بگرە'); return; }
 
   const btn = document.getElementById('outsideSendBtn');
   btn.disabled = true;
