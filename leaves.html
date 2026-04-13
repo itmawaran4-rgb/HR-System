@@ -213,7 +213,6 @@ function selectLeaveType(type) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   requireAuth(false);
-  initPushNotifications();
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   document.getElementById('leaveFrom').value = todayStr;
