@@ -451,7 +451,7 @@ async function doCheckOut() {
     if (res.success) {
       const now = res.data && res.data.checkOut ? res.data.checkOut : new Date().toLocaleTimeString('en-GB');
       const ci  = document.getElementById('todayCheckIn').textContent;
-      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `بەیانت باش!`);
+      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `خوا حافیز!`);
       // Update UI directly
       btn.disabled = true;
       btn.innerHTML = '🔴 چوونەدەرەوە';
