@@ -999,6 +999,7 @@ function renderRequests() {
           </div>
           <div style="color:var(--text-secondary);font-size:14px;margin-bottom:10px">${escapeHtml(r.message||'—')}</div>
           ${extra.note ? `<div style="font-size:13px;background:rgba(245,158,11,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:var(--text-primary)">📝 ${escapeHtml(extra.note)}</div>` : ''}
+          ${extra.requestTime && String(r.type||'').includes('outside') ? `<div style="font-size:13px;background:rgba(59,130,246,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:#3b82f6">🕐 ${extra.action === 'checkout' ? 'وقت الخروج' : 'وقت الدخول'}: <strong>${extra.requestTime}</strong> — ${r.date||''}</div>` : ''}
           ${isPending && rid && String(r.type||'').startsWith('leave') ? (() => {
             const isHourly = (extra.leaveType || '') === 'hourly';
             const defDays  = extra.days  !== undefined ? extra.days  : '';
@@ -1196,8 +1197,8 @@ async function loadLeaveBalance() {
       const totalHours  = empLeaves.reduce((s,l) => s + (parseFloat(l.hours)||0), 0);
 
       const fmt = n => n > 0 ? `<strong>${n.toFixed(1).replace('.0','')}</strong>` : '<span style="color:var(--text-muted)">—</span>';
-      return `<tr>
-        <td><strong>${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
+      return `<tr style="cursor:pointer" onclick="showLeaveDetail('${escapeHtml(emp.id)}','${escapeHtml(emp.name)}')">
+        <td><strong style="color:var(--gold-500)">${escapeHtml(emp.name)}</strong><br><span class="text-muted" style="font-size:12px">${escapeHtml(emp.id)}</span></td>
         <td><span class="badge badge-blue">${escapeHtml(emp.department||'—')}</span></td>
         <td>${fmt(annualDays)}</td>
         <td>${fmt(sickDays)}</td>
@@ -1209,6 +1210,44 @@ async function loadLeaveBalance() {
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="7" class="loading-rows text-red">${e.message}</td></tr>`;
     Toast.error('Failed', e.message);
+  }
+}
+
+async function showLeaveDetail(empId, empName) {
+  const modal  = document.getElementById('leaveDetailModal');
+  const title  = document.getElementById('leaveDetailTitle');
+  const body   = document.getElementById('leaveDetailBody');
+  if (!modal) return;
+  title.textContent = `🌴 ${empName} — Leave Records`;
+  body.innerHTML = `<div class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</div>`;
+  openModal('leaveDetailModal');
+
+  try {
+    const res = await API.getLeaves({ employeeId: empId });
+    if (!res.success) throw new Error(res.message);
+    const records = (res.data || []).sort((a,b) => new Date(b.date) - new Date(a.date));
+    if (!records.length) {
+      body.innerHTML = `<div class="empty-state"><div class="empty-icon">🌴</div><div class="empty-title">No leave records</div></div>`;
+      return;
+    }
+    const typeLabel = t => ({ annual:'🌴 Annual', sick:'🏥 Sick', hourly:'⏰ Hourly' }[t] || t);
+    body.innerHTML = `<table style="width:100%">
+      <thead><tr>
+        <th>Date</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Hours</th>
+      </tr></thead>
+      <tbody>
+        ${records.map(r => `<tr>
+          <td style="font-size:13px">${r.date||'—'}</td>
+          <td>${typeLabel(r.leaveType)}</td>
+          <td>${r.from||'—'}</td>
+          <td>${r.to||r.from||'—'}</td>
+          <td>${r.days > 0 ? `<span class="badge badge-gold">${(+r.days).toFixed(1).replace('.0','')}</span>` : '—'}</td>
+          <td>${r.hours > 0 ? `<span class="badge badge-blue">${(+r.hours).toFixed(1).replace('.0','')}h</span>` : '—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {
+    body.innerHTML = `<div class="loading-rows text-red">${e.message}</div>`;
   }
 }
 
