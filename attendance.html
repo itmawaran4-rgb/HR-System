@@ -63,7 +63,7 @@
 
 <div class="main-content">
   <header class="topbar">
-    <button onclick="location.reload()" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--gold-500);border-radius:10px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap" title="نوێکردنەوەی لاپەڕە">🔄</button>
+    <button onclick="location.reload()" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--gold-500);border-radius:10px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap" title="نوێکردنەوەی لاپەڕە">🔄 نوێکردنەوە</button>
     <span class="topbar-date" id="topbarDate"></span>
     <div class="topbar-spacer"></div>
     <span class="topbar-title">ئامادەبوون</span>
@@ -72,6 +72,7 @@
   <main class="page-content">
     <div class="page-header">
       <h1 class="page-title">بەدواداچوونی ئامادەبوون</h1>
+      <p class="page-subtitle">کاتی هاتنەژوورەوە و چوونەدەرەوەی ڕۆژانەت تۆمار بکە</p>
     </div>
 
     <!-- Clock -->
@@ -85,8 +86,6 @@
       <div class="status-indicator" id="statusIndicator">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">ئەمڕۆ هێشتا نەهاتووەتەژوورەوە</span>
-      </div>
-    </div>
 
     <!-- Today's Summary -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
@@ -113,7 +112,7 @@
           <div class="card-title-icon blue">📋</div>
           <span id="attCardTitle">مێژووی ئامادەبوون</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄 نوێکردنەوە</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄</button>
       </div>
       <div class="table-wrapper">
         <table>
@@ -183,7 +182,7 @@
       </div>
       <div class="form-group">
         <label class="form-label" style="text-align:right;display:block">
-          وێنەی شوێن <span style="color:var(--text-muted);font-size:12px">*</span>
+          وێنەی شوێن <span style="color:var(--text-muted);font-size:12px">(*)</span>
         </label>
         <!-- Camera capture only (no gallery) -->
         <input type="file" id="outsidePhoto" accept="image/*" capture="environment"
@@ -364,6 +363,8 @@ function updateTodayStatus(record) {
 
   const hasCheckIn  = record && record.checkIn  && record.checkIn  !== '—' && record.checkIn  !== '';
   const hasCheckOut = record && record.checkOut && record.checkOut !== '—' && record.checkOut !== '';
+  const isPendingIn  = hasCheckIn  && record.checkIn  === 'pending';
+  const isPendingOut = hasCheckOut && record.checkOut === 'pending';
 
   if (!record || !hasCheckIn) {
     checkInBtn.disabled = false; checkOutBtn.disabled = true;
@@ -372,13 +373,20 @@ function updateTodayStatus(record) {
   } else if (hasCheckIn && !hasCheckOut) {
     checkInBtn.disabled = true; checkOutBtn.disabled = false;
     statusDot.className = 'status-dot checked-in';
-    statusText.textContent = `هاتوویتەژوورەوە لە ${record.checkIn}`;
-    todayCI.textContent = record.checkIn; todayCO.textContent = '—';
+    statusText.textContent = isPendingIn
+      ? `⏳ چاوەڕێی مۆڵەت — هاتنەژوورەوە`
+      : `هاتوویتەژوورەوە لە ${record.checkIn}`;
+    todayCI.textContent = isPendingIn ? '⏳ pending' : record.checkIn;
+    todayCO.textContent = '—';
   } else {
     checkInBtn.disabled = true; checkOutBtn.disabled = true;
-    statusDot.className = 'status-dot'; statusDot.style.background = 'var(--blue-500)';
-    statusText.textContent = `ڕۆژ تەواوبوو — ${record.checkIn} → ${record.checkOut}`;
-    todayCI.textContent = record.checkIn; todayCO.textContent = record.checkOut;
+    statusDot.className = 'status-dot';
+    statusDot.style.background = isPendingOut ? 'var(--gold-500)' : 'var(--blue-500)';
+    statusText.textContent = isPendingOut
+      ? `⏳ چاوەڕێی مۆڵەت — چوونەدەرەوە`
+      : `ڕۆژ تەواوبوو — ${record.checkIn} → ${record.checkOut}`;
+    todayCI.textContent  = isPendingIn  ? '⏳ pending' : record.checkIn;
+    todayCO.textContent  = isPendingOut ? '⏳ pending' : record.checkOut;
   }
 }
 
@@ -451,7 +459,7 @@ async function doCheckOut() {
     if (res.success) {
       const now = res.data && res.data.checkOut ? res.data.checkOut : new Date().toLocaleTimeString('en-GB');
       const ci  = document.getElementById('todayCheckIn').textContent;
-      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `خوا حافیز!`);
+      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `خوا حافيز!`);
       // Update UI directly
       btn.disabled = true;
       btn.innerHTML = '🔴 چوونەدەرەوە';
@@ -657,9 +665,6 @@ async function sendOutsideRequest() {
   btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
 
   try {
-    const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
-
-    // تخزين الصورة مباشرة في Sheets (base64 مضغوط ~10-20KB)
     const res = await API.addRequest({
       employeeId: user.id,
       name:       user.name,
@@ -676,10 +681,29 @@ async function sendOutsideRequest() {
     });
 
     if (res.success) {
+      const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
+      const reqTime     = _pendingOutside.requestTime;
+      const isCheckIn   = _pendingOutside.action === 'checkin';
+
       Toast.success('داواکاری نێردرا ✅', 'چاوەڕێی مۆڵەتی ئەدمین بکە');
       closeModal('outsideModal');
-      document.getElementById('statusText').textContent =
-        `⏳ چاوەڕێی مۆڵەت — ${actionLabel} لە دەرەوەی ئۆفیس`;
+
+      // ── تحديث الـ UI فوراً كأن الطلب مسجَّل ──
+      if (isCheckIn) {
+        document.getElementById('checkInBtn').disabled  = true;
+        document.getElementById('checkOutBtn').disabled = false;
+        document.getElementById('statusDot').className  = 'status-dot checked-in';
+        document.getElementById('statusText').textContent = `⏳ چاوەڕێی مۆڵەت — هاتنەژوورەوە ${reqTime}`;
+        document.getElementById('todayCheckIn').textContent  = `⏳ ${reqTime}`;
+        document.getElementById('todayCheckOut').textContent = '—';
+      } else {
+        document.getElementById('checkInBtn').disabled  = true;
+        document.getElementById('checkOutBtn').disabled = true;
+        document.getElementById('statusDot').className  = 'status-dot';
+        document.getElementById('statusDot').style.background = 'var(--gold-500)';
+        document.getElementById('statusText').textContent = `⏳ چاوەڕێی مۆڵەت — چوونەدەرەوە ${reqTime}`;
+        document.getElementById('todayCheckOut').textContent = `⏳ ${reqTime}`;
+      }
     } else throw new Error(res.message);
   } catch(e) {
     Toast.error('نێردن سەرکەوتوو نەبوو', e.message);
