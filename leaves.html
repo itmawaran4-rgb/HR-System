@@ -138,7 +138,7 @@
       <button class="modal-close" onclick="closeModal('leaveModal')">×</button>
     </div>
     <div style="padding:0 20px">
-      <!-- نوع المجازة فوق التاريخ -->
+      <!-- نوع المجازة -->
       <div class="form-group">
         <label class="form-label">جۆری مۆڵەت *</label>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px" id="leaveTypePicker">
@@ -157,7 +157,7 @@
         </div>
       </div>
 
-      <!-- حقول التاريخ (للاجازة السنوية والمرضية) -->
+      <!-- ساڵانە: ئەم بواری تەنها بۆ ساڵانە دەردەکەوێت -->
       <div id="leaveDateFields">
         <div class="form-group">
           <label class="form-label">بەرواری دەستپێکردن *</label>
@@ -169,7 +169,7 @@
         </div>
       </div>
 
-      <!-- حقول الوقت (للاجازة الزمنية) -->
+      <!-- کاتژمێری: تەنها کات -->
       <div id="leaveTimeFields" style="display:none">
         <div class="form-group">
           <label class="form-label">کاتی دەستپێکردن *</label>
@@ -178,6 +178,41 @@
         <div class="form-group">
           <label class="form-label">کاتی کۆتایی *</label>
           <input type="time" class="form-control" id="leaveTimeTo">
+        </div>
+      </div>
+
+      <!-- نەخۆشی: ئایام یان کات (یەکێک پێویستە) -->
+      <div id="leaveSickFields" style="display:none">
+        <div style="background:rgba(59,130,246,0.07);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#3b82f6">
+          ℹ️ یەکێک لەم دووەیە پڕ بکەرەوە — ئایام یان کاتژمێر
+        </div>
+        <!-- ئایام -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label class="form-label">بەرواری دەستپێکردن</label>
+            <input type="date" class="form-control" id="sickFrom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">بەرواری کۆتایی</label>
+            <input type="date" class="form-control" id="sickTo">
+          </div>
+        </div>
+        <!-- خط فاصل -->
+        <div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px">
+          <div style="flex:1;height:1px;background:var(--border-color)"></div>
+          <span style="font-size:12px;color:var(--text-muted)">یان</span>
+          <div style="flex:1;height:1px;background:var(--border-color)"></div>
+        </div>
+        <!-- کاتژمێر -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label class="form-label">کاتی دەستپێکردن</label>
+            <input type="time" class="form-control" id="sickTimeFrom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">کاتی کۆتایی</label>
+            <input type="time" class="form-control" id="sickTimeTo">
+          </div>
         </div>
       </div>
 
@@ -206,18 +241,19 @@ let selectedLeaveType = 'annual';
 function selectLeaveType(type) {
   selectedLeaveType = type;
   document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
-  const isHourly = type === 'hourly';
-  document.getElementById('leaveDateFields').style.display = isHourly ? 'none' : 'block';
-  document.getElementById('leaveTimeFields').style.display = isHourly ? 'block' : 'none';
+  // show/hide sections
+  document.getElementById('leaveDateFields').style.display = type === 'annual'  ? 'block' : 'none';
+  document.getElementById('leaveTimeFields').style.display = type === 'hourly'  ? 'block' : 'none';
+  document.getElementById('leaveSickFields').style.display = type === 'sick'    ? 'block' : 'none';
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   requireAuth(false);
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  document.getElementById('leaveFrom').value = todayStr;
-  document.getElementById('leaveTo').value   = todayStr;
-  // Default times
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('leaveFrom').value    = today;
+  document.getElementById('leaveTo').value      = today;
+  document.getElementById('sickFrom').value     = today;
+  document.getElementById('sickTo').value       = today;
   document.getElementById('leaveTimeFrom').value = '08:00';
   document.getElementById('leaveTimeTo').value   = '10:00';
   await loadLeaves();
@@ -291,22 +327,63 @@ async function submitLeave() {
   const btn    = document.getElementById('leaveSaveBtn');
   let msgText, extraData;
 
-  if (type === 'hourly') {
-    const tFrom = document.getElementById('leaveTimeFrom').value;
-    const tTo   = document.getElementById('leaveTimeTo').value;
-    if (!tFrom || !tTo) { Toast.warning('تێبینی', 'تکایە کاتەکان پڕبکەرەوە'); return; }
-    if (tTo <= tFrom)   { Toast.warning('تێبینی', 'کاتی کۆتایی نابێت پێش دەستپێکردن بێت'); return; }
-    const today = new Date().toISOString().split('T')[0];
-    msgText   = `مۆڵەتی کاتژمێری | ${tFrom} → ${tTo}${reason ? ' | ' + reason : ''}`;
-    extraData = { timeFrom: tFrom, timeTo: tTo, leaveType: 'hourly', date: today, reason };
-  } else {
+  if (type === 'annual') {
+    // ── ساڵانە: ئایام تەنها ──
     const from = document.getElementById('leaveFrom').value;
     const to   = document.getElementById('leaveTo').value;
     if (!from || !to) { Toast.warning('تێبینی', 'تکایە بەروارەکان پڕبکەرەوە'); return; }
     if (new Date(to) < new Date(from)) { Toast.warning('تێبینی', 'بەرواری کۆتایی نابێت پێش دەستپێکردن بێت'); return; }
     const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
-    msgText   = `${leaveTypeLabels[type]} | ${from} → ${to} (${days} ڕۆژ)${reason ? ' | ' + reason : ''}`;
-    extraData = { from, to, days, leaveType: type, reason };
+    msgText   = `مۆڵەتی ساڵانە | ${from} → ${to} (${days} ڕۆژ)${reason ? ' | ' + reason : ''}`;
+    extraData = { from, to, days, leaveType: 'annual', reason };
+
+  } else if (type === 'hourly') {
+    // ── کاتژمێری: کات تەنها ──
+    const tFrom = document.getElementById('leaveTimeFrom').value;
+    const tTo   = document.getElementById('leaveTimeTo').value;
+    if (!tFrom || !tTo) { Toast.warning('تێبینی', 'تکایە کاتەکان پڕبکەرەوە'); return; }
+    if (tTo <= tFrom)   { Toast.warning('تێبینی', 'کاتی کۆتایی نابێت پێش دەستپێکردن بێت'); return; }
+    const [h1,m1] = tFrom.split(':').map(Number);
+    const [h2,m2] = tTo.split(':').map(Number);
+    const hrs = ((h2*60+m2) - (h1*60+m1)) / 60;
+    const today = new Date().toISOString().split('T')[0];
+    msgText   = `مۆڵەتی کاتژمێری | ${tFrom} → ${tTo} (${hrs.toFixed(1)} کاتژمێر)${reason ? ' | ' + reason : ''}`;
+    extraData = { timeFrom: tFrom, timeTo: tTo, hours: hrs, leaveType: 'hourly', date: today, reason };
+
+  } else {
+    // ── نەخۆشی: ئایام یان کات (یەکێک پێویستە) ──
+    const from    = document.getElementById('sickFrom').value;
+    const to      = document.getElementById('sickTo').value;
+    const tFrom   = document.getElementById('sickTimeFrom').value;
+    const tTo     = document.getElementById('sickTimeTo').value;
+    const hasDays = from && to;
+    const hasTime = tFrom && tTo;
+
+    if (!hasDays && !hasTime) {
+      Toast.warning('تێبینی', 'تکایە ئایام یان کاتژمێر پڕبکەرەوە');
+      return;
+    }
+    if (hasDays && new Date(to) < new Date(from)) {
+      Toast.warning('تێبینی', 'بەرواری کۆتایی نابێت پێش دەستپێکردن بێت');
+      return;
+    }
+    if (hasTime && tTo <= tFrom) {
+      Toast.warning('تێبینی', 'کاتی کۆتایی نابێت پێش دەستپێکردن بێت');
+      return;
+    }
+
+    if (hasDays) {
+      const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+      msgText   = `مۆڵەتی نەخۆشی | ${from} → ${to} (${days} ڕۆژ)${reason ? ' | ' + reason : ''}`;
+      extraData = { from, to, days, leaveType: 'sick', reason };
+    } else {
+      const [h1,m1] = tFrom.split(':').map(Number);
+      const [h2,m2] = tTo.split(':').map(Number);
+      const hrs = ((h2*60+m2) - (h1*60+m1)) / 60;
+      const today = new Date().toISOString().split('T')[0];
+      msgText   = `مۆڵەتی نەخۆشی (کاتژمێری) | ${tFrom} → ${tTo} (${hrs.toFixed(1)} کاتژمێر)${reason ? ' | ' + reason : ''}`;
+      extraData = { timeFrom: tFrom, timeTo: tTo, hours: hrs, leaveType: 'sick', date: today, reason };
+    }
   }
 
   btn.disabled = true; btn.innerHTML = '<span class="spinner spinner-sm"></span> ناردن...';
