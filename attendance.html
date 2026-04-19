@@ -86,6 +86,7 @@
       <div class="status-indicator" id="statusIndicator">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">ئەمڕۆ هێشتا نەهاتووەتەژوورەوە</span>
+      </div>
 
     <!-- Today's Summary -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
@@ -112,7 +113,7 @@
           <div class="card-title-icon blue">📋</div>
           <span id="attCardTitle">مێژووی ئامادەبوون</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadAttendanceHistory()">🔄 </button>
       </div>
       <div class="table-wrapper">
         <table>
@@ -182,7 +183,7 @@
       </div>
       <div class="form-group">
         <label class="form-label" style="text-align:right;display:block">
-          وێنەی شوێن <span style="color:var(--text-muted);font-size:12px">(*)</span>
+          وێنەی شوێن <span style="color:var(--text-muted);font-size:12px">(ئارەزوومەندانە)</span>
         </label>
         <!-- Camera capture only (no gallery) -->
         <input type="file" id="outsidePhoto" accept="image/*" capture="environment"
@@ -459,7 +460,7 @@ async function doCheckOut() {
     if (res.success) {
       const now = res.data && res.data.checkOut ? res.data.checkOut : new Date().toLocaleTimeString('en-GB');
       const ci  = document.getElementById('todayCheckIn').textContent;
-      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `خوا حافيز!`);
+      Toast.success('چوونەدەرەوە تۆماركرا! 📍', `بەیانت باش!`);
       // Update UI directly
       btn.disabled = true;
       btn.innerHTML = '🔴 چوونەدەرەوە';
