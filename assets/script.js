@@ -56,9 +56,10 @@ const API = {
   async updateEmployee(data)        { return this.request('updateEmployee', data); },
   async deleteEmployee(id)          { return this.request('deleteEmployee', { id }); },
   async checkIn(employeeId, name)   { return this.request('checkIn', { employeeId, name }); },
+  // FIX: pass date so GAS filters by today only — prevents writing checkout to a stale open record
   async checkOut(employeeId, name, date) {
-  return this.request('checkOut', { employeeId, name, date: date || new Date().toISOString().split('T')[0] });
-}
+    return this.request('checkOut', { employeeId, name, date: date || new Date().toISOString().split('T')[0] });
+  },
   async getAttendance(filters = {}) { return this.request('getAttendance', filters); },
   async getAnnouncements()          { return this.request('getAnnouncements'); },
   async addAnnouncement(data)       { return this.request('addAnnouncement', data); },
