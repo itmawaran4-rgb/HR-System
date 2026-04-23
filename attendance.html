@@ -457,9 +457,11 @@ async function doCheckOut() {
       return;
     }
     btn.innerHTML = '<span class="spinner spinner-sm"></span> تۆمارکردن...';
-    const res = await API.checkOut(user.id, user.name);
+    const todayDate = new Date().toISOString().split('T')[0];
+    const res = await API.checkOut(user.id, user.name, todayDate);
     if (res.success) {
-      const now = res.data && res.data.checkOut ? res.data.checkOut : new Date().toLocaleTimeString('en-GB');
+      const now = res.data && res.data.checkOut ? res.data.checkOut
+                : new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
       const ci  = document.getElementById('todayCheckIn').textContent;
       Toast.success('چوونەدەرەوە تۆماركرا! 📍', `خوات لەگەڵ!`);
       // Update UI directly
@@ -662,6 +664,8 @@ async function sendOutsideRequest() {
   const note  = document.getElementById('outsideNote').value.trim();
   if (!note) { Toast.warning('تێبینی', 'تکایە هۆکارەکە بنووسە'); return; }
 
+  const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
+
   const btn = document.getElementById('outsideSendBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner spinner-sm"></span> نێردن...';
@@ -683,8 +687,7 @@ async function sendOutsideRequest() {
     });
 
     if (res.success) {
-      const actionLabel = _pendingOutside.action === 'checkin' ? 'هاتنەژوورەوە' : 'چوونەدەرەوە';
-      const reqTime     = _pendingOutside.requestTime;
+      const reqTime = _pendingOutside.requestTime;
       const isCheckIn   = _pendingOutside.action === 'checkin';
 
       Toast.success('داواکاری نێردرا ✅', 'چاوەڕێی مۆڵەتی ئەدمین بکە');
