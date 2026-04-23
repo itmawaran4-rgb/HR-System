@@ -56,7 +56,7 @@ const API = {
   async updateEmployee(data)        { return this.request('updateEmployee', data); },
   async deleteEmployee(id)          { return this.request('deleteEmployee', { id }); },
   async checkIn(employeeId, name)   { return this.request('checkIn', { employeeId, name }); },
-  async checkOut(employeeId, name)  { return this.request('checkOut', { employeeId, name }); },
+  async checkOut(employeeId, name, date) { return this.request('checkOut', { employeeId, name, ...(date ? { date } : {}) }); },
   async getAttendance(filters = {}) { return this.request('getAttendance', filters); },
   async getAnnouncements()          { return this.request('getAnnouncements'); },
   async addAnnouncement(data)       { return this.request('addAnnouncement', data); },
