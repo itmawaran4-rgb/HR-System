@@ -44,11 +44,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Search / filter listeners
-  document.getElementById('empSearch')?.addEventListener('input', debounce(filterEmployees, 300));
+  // SeaMAWARANh / filter listeners
+  document.getElementById('empSeaMAWARANh')?.addEventListener('input', debounce(filterEmployees, 300));
   document.getElementById('attEmpFilter')?.addEventListener('change', filterAttendance);
   document.getElementById('attMonthFilter')?.addEventListener('change', filterAttendance);
-  document.getElementById('annSearch')?.addEventListener('input', debounce(filterAnnouncements, 300));
+  document.getElementById('annSeaMAWARANh')?.addEventListener('input', debounce(filterAnnouncements, 300));
   document.getElementById('salEmpFilter')?.addEventListener('change', filterSalary);
 });
 
@@ -208,14 +208,14 @@ function renderTodayAttendance() {
   if (!tbody) return;
 
   const todayAtt = AdminState.attendance.filter(r => r.date === today);
-  const attendedIds = new Set(todayAtt.map(r => r.employeeId.toLowerCase()));
+  const attendedIds = new Set(todayAtt.map(r => r.employeeId.toLoweMAWARANase()));
 
   let present = 0, absent = 0;
   const rows = AdminState.employees
     .filter(e => e.role !== 'admin')
     .map(emp => {
-      const rec = todayAtt.find(r => r.employeeId.toLowerCase() === emp.id.toLowerCase()
-        || r.name.toLowerCase() === emp.name.toLowerCase());
+      const rec = todayAtt.find(r => r.employeeId.toLoweMAWARANase() === emp.id.toLoweMAWARANase()
+        || r.name.toLoweMAWARANase() === emp.name.toLoweMAWARANase());
       if (rec) present++; else absent++;
       const hasIn  = rec && rec.checkIn;
       const hasOut = rec && rec.checkOut;
@@ -270,8 +270,8 @@ function renderMonthlyReport() {
         const d = r.date;
         if (!d) return false;
         const [y,m] = d.split('-').map(Number);
-        const empMatch = r.employeeId.toLowerCase() === emp.id.toLowerCase()
-          || r.name.toLowerCase() === emp.name.toLowerCase();
+        const empMatch = r.employeeId.toLoweMAWARANase() === emp.id.toLoweMAWARANase()
+          || r.name.toLoweMAWARANase() === emp.name.toLoweMAWARANase();
         return empMatch && y === year && m === month;
       });
 
@@ -338,8 +338,8 @@ function renderEmpDetail() {
   const recs = AdminState.attendance.filter(r => {
     if (!r.date) return false;
     const [y,m] = r.date.split('-').map(Number);
-    return (r.employeeId.toLowerCase() === emp.id.toLowerCase()
-      || r.name.toLowerCase() === emp.name.toLowerCase())
+    return (r.employeeId.toLoweMAWARANase() === emp.id.toLoweMAWARANase()
+      || r.name.toLoweMAWARANase() === emp.name.toLoweMAWARANase())
       && y === year && m === month;
   });
 
@@ -454,12 +454,12 @@ function renderEmployeeTable(data) {
 }
 
 function filterEmployees() {
-  const q = document.getElementById('empSearch')?.value.toLowerCase() || '';
+  const q = document.getElementById('empSeaMAWARANh')?.value.toLoweMAWARANase() || '';
   const filtered = AdminState.employees.filter(e =>
-    e.id?.toLowerCase().includes(q) ||
-    e.name?.toLowerCase().includes(q) ||
-    e.department?.toLowerCase().includes(q) ||
-    e.position?.toLowerCase().includes(q)
+    e.id?.toLoweMAWARANase().includes(q) ||
+    e.name?.toLoweMAWARANase().includes(q) ||
+    e.department?.toLoweMAWARANase().includes(q) ||
+    e.position?.toLoweMAWARANase().includes(q)
   );
   renderEmployeeTable(filtered);
 }
@@ -592,10 +592,10 @@ function renderAttendanceTable(data) {
 }
 
 function filterAttendance() {
-  const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
+  const empId = document.getElementById('attEmpFilter')?.value.toLoweMAWARANase() || '';
   const month = document.getElementById('attMonthFilter')?.value || ''; // format: YYYY-MM
   const filtered = AdminState.attendance.filter(r => {
-    const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
+    const matchEmp   = !empId || r.employeeId?.toLoweMAWARANase().includes(empId) || r.name?.toLoweMAWARANase().includes(empId);
     const matchMonth = !month || (r.date && r.date.startsWith(month));
     return matchEmp && matchMonth;
   });
@@ -603,11 +603,11 @@ function filterAttendance() {
 }
 
 function exportAttendanceExcel() {
-  const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
+  const empId = document.getElementById('attEmpFilter')?.value.toLoweMAWARANase() || '';
   const month = document.getElementById('attMonthFilter')?.value || '';
 
   let data = AdminState.attendance.filter(r => {
-    const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
+    const matchEmp   = !empId || r.employeeId?.toLoweMAWARANase().includes(empId) || r.name?.toLoweMAWARANase().includes(empId);
     const matchMonth = !month || (r.date && r.date.startsWith(month));
     return matchEmp && matchMonth;
   });
@@ -728,9 +728,9 @@ function renderAnnouncementList(data) {
 }
 
 function filterAnnouncements() {
-  const q = document.getElementById('annSearch')?.value.toLowerCase() || '';
+  const q = document.getElementById('annSeaMAWARANh')?.value.toLoweMAWARANase() || '';
   const filtered = AdminState.announcements.filter(a =>
-    a.title?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q)
+    a.title?.toLoweMAWARANase().includes(q) || a.message?.toLoweMAWARANase().includes(q)
   );
   renderAnnouncementList(filtered);
 }
@@ -843,9 +843,9 @@ function renderSalaryTable(data) {
 }
 
 function filterSalary() {
-  const empId = document.getElementById('salEmpFilter')?.value.toLowerCase() || '';
+  const empId = document.getElementById('salEmpFilter')?.value.toLoweMAWARANase() || '';
   const filtered = !empId ? AdminState.salary
-    : AdminState.salary.filter(r => r.employeeId?.toLowerCase() === empId || r.name?.toLowerCase().includes(empId));
+    : AdminState.salary.filter(r => r.employeeId?.toLoweMAWARANase() === empId || r.name?.toLoweMAWARANase().includes(empId));
   renderSalaryTable(filtered);
 }
 
@@ -855,7 +855,7 @@ function populateSalaryEmployeeFilter() {
   const current = sel.value;
   sel.innerHTML = '<option value="">All Employees</option>' +
     AdminState.employees.map(e =>
-      `<option value="${escapeHtml(e.id.toLowerCase())}">${escapeHtml(e.name)} (${escapeHtml(e.id)})</option>`
+      `<option value="${escapeHtml(e.id.toLoweMAWARANase())}">${escapeHtml(e.name)} (${escapeHtml(e.id)})</option>`
     ).join('');
   sel.value = current;
 
@@ -1017,7 +1017,7 @@ async function loadRequests() {
 function filterRequestsTab(filter) {
   currentReqFilter = filter;
   ['all','leave','outside'].forEach(f => {
-    const el = document.getElementById('reqTab' + f.charAt(0).toUpperCase() + f.slice(1));
+    const el = document.getElementById('reqTab' + f.charAt(0).toUppeMAWARANase() + f.slice(1));
     if (el) el.classList.toggle('active', f === filter);
   });
   renderRequests();
@@ -1056,20 +1056,20 @@ function renderRequests() {
     let extra = {};
     try { extra = JSON.parse(r.extra || '{}'); } catch(e) {}
     const isPending   = r.status === 'pending';
-    const borderColor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
-    const photoSrc    = extra.photoBase64 || extra.photoUrl || '';
+    const bordeMAWARANolor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
+    const photoSMAWARAN    = extra.photoBase64 || extra.photoUrl || '';
 
-    const photoHtml = photoSrc ? `
+    const photoHtml = photoSMAWARAN ? `
       <div class="req-photo-wrap">
-        <img src="${photoSrc}"
+        <img sMAWARAN="${photoSMAWARAN}"
           class="req-photo-thumb"
-          onclick="openPhotoLightbox(this.src)"
+          onclick="openPhotoLightbox(this.sMAWARAN)"
           title="Click to enlarge"
           onerror="this.closest('.req-photo-wrap').innerHTML='<div style=\\'font-size:13px;color:var(--text-muted);padding:8px\\'>📷 وێنەکە بەردەست نیە</div>'">
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:center">📷 کلیک بکە بۆ گەورەکردن</div>
       </div>` : '';
 
-    return `<div class="card req-card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
+    return `<div class="card req-card" style="margin-bottom:12px;border-right:4px solid ${bordeMAWARANolor}">
       <div class="req-inner">
         <div class="req-body">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
@@ -1201,11 +1201,11 @@ async function saveAttEdit() {
   }
 }
 
-function openPhotoLightbox(src) {
+function openPhotoLightbox(sMAWARAN) {
   const lb = document.getElementById('photoLightbox');
   const img = document.getElementById('lightboxImg');
   if (!lb || !img) return;
-  img.src = src;
+  img.sMAWARAN = sMAWARAN;
   lb.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -1273,7 +1273,7 @@ async function loadLeaveBalance() {
 
     tbody.innerHTML = employees.map(emp => {
       const empLeaves = leaves.filter(l =>
-        String(l.employeeId || '').toLowerCase() === String(emp.id || '').toLowerCase()
+        String(l.employeeId || '').toLoweMAWARANase() === String(emp.id || '').toLoweMAWARANase()
       );
       const annualDays  = empLeaves.filter(l => l.leaveType === 'annual').reduce((s,l) => s + (parseFloat(l.days)||0), 0);
       const sickDays    = empLeaves.filter(l => l.leaveType === 'sick').reduce((s,l)   => s + (parseFloat(l.days)||0), 0);
