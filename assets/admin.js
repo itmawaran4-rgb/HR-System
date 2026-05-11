@@ -44,11 +44,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // SeaMAWARANh / filter listeners
-  document.getElementById('empSeaMAWARANh')?.addEventListener('input', debounce(filterEmployees, 300));
+  // Search / filter listeners
+  document.getElementById('empSearch')?.addEventListener('input', debounce(filterEmployees, 300));
   document.getElementById('attEmpFilter')?.addEventListener('change', filterAttendance);
-  document.getElementById('attMonthFilter')?.addEventListener('change', filterAttendance);
-  document.getElementById('annSeaMAWARANh')?.addEventListener('input', debounce(filterAnnouncements, 300));
+  document.getElementById('attDateFilter')?.addEventListener('change', filterAttendance);
+  document.getElementById('annSearch')?.addEventListener('input', debounce(filterAnnouncements, 300));
   document.getElementById('salEmpFilter')?.addEventListener('change', filterSalary);
 });
 
@@ -208,14 +208,14 @@ function renderTodayAttendance() {
   if (!tbody) return;
 
   const todayAtt = AdminState.attendance.filter(r => r.date === today);
-  const attendedIds = new Set(todayAtt.map(r => r.employeeId.toLoweMAWARANase()));
+  const attendedIds = new Set(todayAtt.map(r => r.employeeId.toLowerCase()));
 
   let present = 0, absent = 0;
   const rows = AdminState.employees
     .filter(e => e.role !== 'admin')
     .map(emp => {
-      const rec = todayAtt.find(r => r.employeeId.toLoweMAWARANase() === emp.id.toLoweMAWARANase()
-        || r.name.toLoweMAWARANase() === emp.name.toLoweMAWARANase());
+      const rec = todayAtt.find(r => r.employeeId.toLowerCase() === emp.id.toLowerCase()
+        || r.name.toLowerCase() === emp.name.toLowerCase());
       if (rec) present++; else absent++;
       const hasIn  = rec && rec.checkIn;
       const hasOut = rec && rec.checkOut;
@@ -270,8 +270,8 @@ function renderMonthlyReport() {
         const d = r.date;
         if (!d) return false;
         const [y,m] = d.split('-').map(Number);
-        const empMatch = r.employeeId.toLoweMAWARANase() === emp.id.toLoweMAWARANase()
-          || r.name.toLoweMAWARANase() === emp.name.toLoweMAWARANase();
+        const empMatch = r.employeeId.toLowerCase() === emp.id.toLowerCase()
+          || r.name.toLowerCase() === emp.name.toLowerCase();
         return empMatch && y === year && m === month;
       });
 
@@ -338,8 +338,8 @@ function renderEmpDetail() {
   const recs = AdminState.attendance.filter(r => {
     if (!r.date) return false;
     const [y,m] = r.date.split('-').map(Number);
-    return (r.employeeId.toLoweMAWARANase() === emp.id.toLoweMAWARANase()
-      || r.name.toLoweMAWARANase() === emp.name.toLoweMAWARANase())
+    return (r.employeeId.toLowerCase() === emp.id.toLowerCase()
+      || r.name.toLowerCase() === emp.name.toLowerCase())
       && y === year && m === month;
   });
 
@@ -454,12 +454,12 @@ function renderEmployeeTable(data) {
 }
 
 function filterEmployees() {
-  const q = document.getElementById('empSeaMAWARANh')?.value.toLoweMAWARANase() || '';
+  const q = document.getElementById('empSearch')?.value.toLowerCase() || '';
   const filtered = AdminState.employees.filter(e =>
-    e.id?.toLoweMAWARANase().includes(q) ||
-    e.name?.toLoweMAWARANase().includes(q) ||
-    e.department?.toLoweMAWARANase().includes(q) ||
-    e.position?.toLoweMAWARANase().includes(q)
+    e.id?.toLowerCase().includes(q) ||
+    e.name?.toLowerCase().includes(q) ||
+    e.department?.toLowerCase().includes(q) ||
+    e.position?.toLowerCase().includes(q)
   );
   renderEmployeeTable(filtered);
 }
@@ -592,99 +592,14 @@ function renderAttendanceTable(data) {
 }
 
 function filterAttendance() {
-  const empId = document.getElementById('attEmpFilter')?.value.toLoweMAWARANase() || '';
-  const month = document.getElementById('attMonthFilter')?.value || ''; // format: YYYY-MM
+  const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
+  const date  = document.getElementById('attDateFilter')?.value || '';
   const filtered = AdminState.attendance.filter(r => {
-    const matchEmp   = !empId || r.employeeId?.toLoweMAWARANase().includes(empId) || r.name?.toLoweMAWARANase().includes(empId);
-    const matchMonth = !month || (r.date && r.date.startsWith(month));
-    return matchEmp && matchMonth;
+    const matchEmp  = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
+    const matchDate = !date  || r.date === date;
+    return matchEmp && matchDate;
   });
   renderAttendanceTable(filtered);
-}
-
-function exportAttendanceExcel() {
-  const empId = document.getElementById('attEmpFilter')?.value.toLoweMAWARANase() || '';
-  const month = document.getElementById('attMonthFilter')?.value || '';
-
-  let data = AdminState.attendance.filter(r => {
-    const matchEmp   = !empId || r.employeeId?.toLoweMAWARANase().includes(empId) || r.name?.toLoweMAWARANase().includes(empId);
-    const matchMonth = !month || (r.date && r.date.startsWith(month));
-    return matchEmp && matchMonth;
-  });
-
-  data = [...data].sort((a, b) => {
-    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-    return (a.employeeId || '').localeCompare(b.employeeId || '');
-  });
-
-  if (!data.length) {
-    Toast.warning('No Data', 'No attendance records match the current filter.');
-    return;
-  }
-
-  // ── Build worksheet rows ──
-  const headers = ['Employee ID', 'Employee Name', 'Date', 'Day', 'Check-In', 'Check-Out', 'Duration'];
-  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const rows = data.map(r => {
-    const d = new Date(r.date);
-    const dayName = !isNaN(d) ? dayNames[d.getDay()] : '—';
-    return [
-      r.employeeId || '',
-      r.name || '',
-      r.date || '',
-      dayName,
-      r.checkIn  || '—',
-      r.checkOut || '—',
-      calcDuration(r.checkIn, r.checkOut)
-    ];
-  });
-
-  const monthLabel = month
-    ? new Date(month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : 'All';
-  const filename = `Attendance_${month || 'All'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-
-  // ── SheetJS export ──
-  if (window.XLSX) {
-    const wsData = [headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    // Column widths
-    ws['!cols'] = [
-      { wch: 14 }, // Employee ID
-      { wch: 24 }, // Name
-      { wch: 13 }, // Date
-      { wch: 11 }, // Day
-      { wch: 11 }, // Check-In
-      { wch: 11 }, // Check-Out
-      { wch: 11 }  // Duration
-    ];
-
-    // Freeze header row
-    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
-
-    const wb = XLSX.utils.book_new();
-    wb.Props = { Title: `Attendance Report — ${monthLabel}` };
-    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
-    XLSX.writeFile(wb, filename);
-    Toast.success('Exported ✅', `${data.length} records → ${filename}`);
-  } else {
-    // Fallback: UTF-8 CSV with BOM (opens correctly in Excel)
-    const csvContent = '\uFEFF' +
-      [headers, ...rows]
-        .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
-        .join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = filename.replace('.xlsx', '.csv');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    Toast.success('Exported ✅', `${data.length} records saved as CSV`);
-  }
 }
 
 /* ══════════════════════════════════════════════
@@ -728,9 +643,9 @@ function renderAnnouncementList(data) {
 }
 
 function filterAnnouncements() {
-  const q = document.getElementById('annSeaMAWARANh')?.value.toLoweMAWARANase() || '';
+  const q = document.getElementById('annSearch')?.value.toLowerCase() || '';
   const filtered = AdminState.announcements.filter(a =>
-    a.title?.toLoweMAWARANase().includes(q) || a.message?.toLoweMAWARANase().includes(q)
+    a.title?.toLowerCase().includes(q) || a.message?.toLowerCase().includes(q)
   );
   renderAnnouncementList(filtered);
 }
@@ -843,9 +758,9 @@ function renderSalaryTable(data) {
 }
 
 function filterSalary() {
-  const empId = document.getElementById('salEmpFilter')?.value.toLoweMAWARANase() || '';
+  const empId = document.getElementById('salEmpFilter')?.value.toLowerCase() || '';
   const filtered = !empId ? AdminState.salary
-    : AdminState.salary.filter(r => r.employeeId?.toLoweMAWARANase() === empId || r.name?.toLoweMAWARANase().includes(empId));
+    : AdminState.salary.filter(r => r.employeeId?.toLowerCase() === empId || r.name?.toLowerCase().includes(empId));
   renderSalaryTable(filtered);
 }
 
@@ -855,7 +770,7 @@ function populateSalaryEmployeeFilter() {
   const current = sel.value;
   sel.innerHTML = '<option value="">All Employees</option>' +
     AdminState.employees.map(e =>
-      `<option value="${escapeHtml(e.id.toLoweMAWARANase())}">${escapeHtml(e.name)} (${escapeHtml(e.id)})</option>`
+      `<option value="${escapeHtml(e.id.toLowerCase())}">${escapeHtml(e.name)} (${escapeHtml(e.id)})</option>`
     ).join('');
   sel.value = current;
 
@@ -1017,7 +932,7 @@ async function loadRequests() {
 function filterRequestsTab(filter) {
   currentReqFilter = filter;
   ['all','leave','outside'].forEach(f => {
-    const el = document.getElementById('reqTab' + f.charAt(0).toUppeMAWARANase() + f.slice(1));
+    const el = document.getElementById('reqTab' + f.charAt(0).toUpperCase() + f.slice(1));
     if (el) el.classList.toggle('active', f === filter);
   });
   renderRequests();
@@ -1056,20 +971,20 @@ function renderRequests() {
     let extra = {};
     try { extra = JSON.parse(r.extra || '{}'); } catch(e) {}
     const isPending   = r.status === 'pending';
-    const bordeMAWARANolor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
-    const photoSMAWARAN    = extra.photoBase64 || extra.photoUrl || '';
+    const borderColor = isPending ? 'var(--gold-500)' : (r.status === 'approved' ? '#22c55e' : '#f43f5e');
+    const photoSrc    = extra.photoBase64 || extra.photoUrl || '';
 
-    const photoHtml = photoSMAWARAN ? `
+    const photoHtml = photoSrc ? `
       <div class="req-photo-wrap">
-        <img sMAWARAN="${photoSMAWARAN}"
+        <img src="${photoSrc}"
           class="req-photo-thumb"
-          onclick="openPhotoLightbox(this.sMAWARAN)"
+          onclick="openPhotoLightbox(this.src)"
           title="Click to enlarge"
           onerror="this.closest('.req-photo-wrap').innerHTML='<div style=\\'font-size:13px;color:var(--text-muted);padding:8px\\'>📷 وێنەکە بەردەست نیە</div>'">
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:center">📷 کلیک بکە بۆ گەورەکردن</div>
       </div>` : '';
 
-    return `<div class="card req-card" style="margin-bottom:12px;border-right:4px solid ${bordeMAWARANolor}">
+    return `<div class="card req-card" style="margin-bottom:12px;border-right:4px solid ${borderColor}">
       <div class="req-inner">
         <div class="req-body">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
@@ -1201,11 +1116,11 @@ async function saveAttEdit() {
   }
 }
 
-function openPhotoLightbox(sMAWARAN) {
+function openPhotoLightbox(src) {
   const lb = document.getElementById('photoLightbox');
   const img = document.getElementById('lightboxImg');
   if (!lb || !img) return;
-  img.sMAWARAN = sMAWARAN;
+  img.src = src;
   lb.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -1273,7 +1188,7 @@ async function loadLeaveBalance() {
 
     tbody.innerHTML = employees.map(emp => {
       const empLeaves = leaves.filter(l =>
-        String(l.employeeId || '').toLoweMAWARANase() === String(emp.id || '').toLoweMAWARANase()
+        String(l.employeeId || '').toLowerCase() === String(emp.id || '').toLowerCase()
       );
       const annualDays  = empLeaves.filter(l => l.leaveType === 'annual').reduce((s,l) => s + (parseFloat(l.days)||0), 0);
       const sickDays    = empLeaves.filter(l => l.leaveType === 'sick').reduce((s,l)   => s + (parseFloat(l.days)||0), 0);
