@@ -217,15 +217,15 @@
       <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
         <div>
           <h1 class="page-title">Employee Management</h1>
-          <p class="page-subtitle">Add, edit and manage your workfoMAWARANe</p>
+          <p class="page-subtitle">Add, edit and manage your workforce</p>
         </div>
         <button class="btn btn-primary" onclick="openAddEmployee()">➕ Add Employee</button>
       </div>
 
       <div class="filter-bar">
-        <div class="seaMAWARANh-wrap" style="flex:1">
-          <span class="seaMAWARANh-icon">🔍</span>
-          <input type="text" class="form-control seaMAWARANh-input" id="empSeaMAWARANh" placeholder="SeaMAWARANh employees...">
+        <div class="search-wrap" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control search-input" id="empSearch" placeholder="Search employees...">
         </div>
         <button class="btn btn-secondary btn-sm" onclick="loadEmployees()">🔄 Refresh</button>
       </div>
@@ -339,9 +339,9 @@
       </div>
 
       <div class="filter-bar">
-        <div class="seaMAWARANh-wrap" style="flex:1">
-          <span class="seaMAWARANh-icon">🔍</span>
-          <input type="text" class="form-control seaMAWARANh-input" id="annSeaMAWARANh" placeholder="SeaMAWARANh announcements...">
+        <div class="search-wrap" style="flex:1">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control search-input" id="annSearch" placeholder="Search announcements...">
         </div>
         <button class="btn btn-secondary btn-sm" onclick="loadAnnouncements()">🔄 Refresh</button>
       </div>
@@ -642,7 +642,7 @@
 <!-- Photo Lightbox -->
 <div id="photoLightbox" onclick="closePhotoLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;align-items:center;justify-content:center;cursor:zoom-out;padding:20px">
   <button onclick="closePhotoLightbox()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
-  <img id="lightboxImg" sMAWARAN="" onclick="event.stopPropagation()" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+  <img id="lightboxImg" src="" onclick="event.stopPropagation()" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
 </div>
 
 <style>
@@ -688,9 +688,9 @@
 }
 </style>
 
-<script sMAWARAN="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script sMAWARAN="assets/script.js?v=4"></script>
-<script sMAWARAN="assets/admin.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="assets/script.js?v=4"></script>
+<script src="assets/admin.js"></script>
 <script>
 /**
  * Helper to switch admin tab from quick-action buttons or external calls
