@@ -641,11 +641,13 @@ function filterAttendance() {
 function exportAttendanceExcel() {
   const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
   const month = document.getElementById('attMonthFilter')?.value || '';
+  const day   = document.getElementById('attDayFilter')?.value  || '';
 
   let data = AdminState.attendance.filter(r => {
     const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
     const matchMonth = !month || (r.date && r.date.startsWith(month));
-    return matchEmp && matchMonth;
+    const matchDay   = !day   || (r.date && r.date.slice(-2) === day);
+    return matchEmp && matchMonth && matchDay;
   });
 
   data = [...data].sort((a, b) => {
