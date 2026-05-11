@@ -47,8 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Search / filter listeners
   document.getElementById('empSearch')?.addEventListener('input', debounce(filterEmployees, 300));
   document.getElementById('attEmpFilter')?.addEventListener('input', debounce(filterAttendance, 300));
-  document.getElementById('attMonthFilter')?.addEventListener('input', onAttMonthChange);
-  document.getElementById('attMonthFilter')?.addEventListener('change', onAttMonthChange);
+  document.getElementById('attMonthFilter')?.addEventListener('change', filterAttendance);
   document.getElementById('attDayFilter')?.addEventListener('change', filterAttendance);
   document.getElementById('annSearch')?.addEventListener('input', debounce(filterAnnouncements, 300));
   document.getElementById('salEmpFilter')?.addEventListener('change', filterSalary);
@@ -628,12 +627,12 @@ function clearAttFilters() {
 function filterAttendance() {
   const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
   const month = document.getElementById('attMonthFilter')?.value || '';
-  const day   = document.getElementById('attDayFilter')?.value  || ''; // full date YYYY-MM-DD
+  const day   = document.getElementById('attDayFilter')?.value  || ''; // "01"–"31"
 
   const filtered = AdminState.attendance.filter(r => {
     const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
     const matchMonth = !month || (r.date && r.date.startsWith(month));
-    const matchDay   = !day   || r.date === day;
+    const matchDay   = !day   || (r.date && r.date.slice(-2) === day);
     return matchEmp && matchMonth && matchDay;
   });
   renderAttendanceTable(filtered);
