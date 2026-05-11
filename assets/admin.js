@@ -47,7 +47,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Search / filter listeners
   document.getElementById('empSearch')?.addEventListener('input', debounce(filterEmployees, 300));
   document.getElementById('attEmpFilter')?.addEventListener('input', debounce(filterAttendance, 300));
+  document.getElementById('attMonthFilter')?.addEventListener('input', onAttMonthChange);
   document.getElementById('attMonthFilter')?.addEventListener('change', onAttMonthChange);
+  document.getElementById('attDayFilter')?.addEventListener('change', filterAttendance);
   document.getElementById('annSearch')?.addEventListener('input', debounce(filterAnnouncements, 300));
   document.getElementById('salEmpFilter')?.addEventListener('change', filterSalary);
 });
