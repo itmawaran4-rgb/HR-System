@@ -5,7 +5,7 @@
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbzyXupNQEtsK7BZgIbvJfJP9cFQB9-6M_hWcNXAPBYjjnbxuFW0_pZECp91guyvf-ia/exec',
   APP_NAME: 'HR Nexus',
-  SESSION_KEY: 'hr_mawaran_session',
+  SESSION_KEY: 'hr_nexus_session',
   VERSION: '1.0.0'
 };
 
