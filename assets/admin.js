@@ -46,8 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Search / filter listeners
   document.getElementById('empSearch')?.addEventListener('input', debounce(filterEmployees, 300));
-  document.getElementById('attEmpFilter')?.addEventListener('change', filterAttendance);
-  document.getElementById('attMonthFilter')?.addEventListener('change', filterAttendance);
+  document.getElementById('attEmpFilter')?.addEventListener('input', debounce(filterAttendance, 300));
+  document.getElementById('attMonthFilter')?.addEventListener('change', onAttMonthChange);
   document.getElementById('annSearch')?.addEventListener('input', debounce(filterAnnouncements, 300));
   document.getElementById('salEmpFilter')?.addEventListener('change', filterSalary);
 });
@@ -591,13 +591,48 @@ function renderAttendanceTable(data) {
   }).join(''));
 }
 
+function onAttMonthChange() {
+  const month = document.getElementById('attMonthFilter')?.value || '';
+  const daySel = document.getElementById('attDayFilter');
+  if (!daySel) return;
+
+  daySel.innerHTML = '<option value="">All Days</option>';
+
+  if (month) {
+    const [year, mon] = month.split('-').map(Number);
+    const daysInMonth = new Date(year, mon, 0).getDate();
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayStr  = String(d).padStart(2, '0');
+      const dateObj = new Date(year, mon - 1, d);
+      const dayName = dayNames[dateObj.getDay()];
+      const opt = document.createElement('option');
+      opt.value = `${month}-${dayStr}`;
+      opt.textContent = `${dayStr} — ${dayName}`;
+      daySel.appendChild(opt);
+    }
+  }
+
+  filterAttendance();
+}
+
+function clearAttFilters() {
+  document.getElementById('attEmpFilter').value   = '';
+  document.getElementById('attMonthFilter').value = '';
+  document.getElementById('attDayFilter').innerHTML = '<option value="">All Days</option>';
+  filterAttendance();
+}
+
 function filterAttendance() {
   const empId = document.getElementById('attEmpFilter')?.value.toLowerCase() || '';
-  const month = document.getElementById('attMonthFilter')?.value || ''; // format: YYYY-MM
+  const month = document.getElementById('attMonthFilter')?.value || '';
+  const day   = document.getElementById('attDayFilter')?.value  || ''; // full date YYYY-MM-DD
+
   const filtered = AdminState.attendance.filter(r => {
     const matchEmp   = !empId || r.employeeId?.toLowerCase().includes(empId) || r.name?.toLowerCase().includes(empId);
     const matchMonth = !month || (r.date && r.date.startsWith(month));
-    return matchEmp && matchMonth;
+    const matchDay   = !day   || r.date === day;
+    return matchEmp && matchMonth && matchDay;
   });
   renderAttendanceTable(filtered);
 }
