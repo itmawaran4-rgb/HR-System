@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR MAWARAN — Admin Dashboard</title>
+  <title>HR RC — Admin Dashboard</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
   <div class="sidebar-header">
     <div class="sidebar-logo-icon">🏢</div>
     <div class="sidebar-logo-text">
-      <div class="brand-name">HR MAWARAN</div>
+      <div class="brand-name">HR RC</div>
       <div class="brand-sub">Admin Dashboard</div>
     </div>
   </div>
@@ -261,10 +261,11 @@
       </div>
 
       <div class="filter-bar">
-        <input type="text" class="form-control" id="attEmpFilter" placeholder="Filter by employee ID or name...">
-        <input type="date"  class="form-control" id="attDateFilter">
+        <input type="text" class="form-control" id="attEmpFilter" placeholder="Filter by employee ID or name..." style="flex:1;min-width:160px">
+        <input type="month" class="form-control" id="attMonthFilter" style="width:160px">
         <button class="btn btn-secondary btn-sm" onclick="loadAttendance()">🔄 Refresh</button>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('attEmpFilter').value='';document.getElementById('attDateFilter').value='';filterAttendance()">✕ Clear</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('attEmpFilter').value='';document.getElementById('attMonthFilter').value='';filterAttendance()">✕ Clear</button>
+        <button class="btn btn-success btn-sm" onclick="exportAttendanceExcel()" title="Export to Excel">📥 Export Excel</button>
       </div>
 
       <div class="table-wrapper">
@@ -687,6 +688,7 @@
 }
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="assets/script.js?v=4"></script>
 <script src="assets/admin.js"></script>
 <script>
