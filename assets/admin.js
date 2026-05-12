@@ -1011,10 +1011,7 @@ function showPendingAlert(count) {
       <div style="font-size:14px; color:var(--text-muted); margin-bottom:24px;">
         ${count > 1 ? `There are ${count} requests waiting for your review.` : `There is 1 request waiting for your review.`}
       </div>
-      <button onclick="
-        document.getElementById('pendingAlertOverlay').remove();
-        document.querySelector('[data-tab=\'tab-requests\']')?.click();
-      " style="
+      <button id="pendingAlertReviewBtn" style="
         background:var(--gold-500); color:#000;
         border:none; border-radius:8px;
         padding:10px 28px; font-size:14px; font-weight:700;
@@ -1032,6 +1029,13 @@ function showPendingAlert(count) {
   `;
 
   document.body.appendChild(overlay);
+
+  document.getElementById('pendingAlertReviewBtn').addEventListener('click', () => {
+    overlay.remove();
+    showAdminTab('tab-requests', 'loadRequests');
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-tab="tab-requests"]')?.classList.add('active');
+  });
 }
 
 async function loadRequestsBackground() {
