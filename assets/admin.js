@@ -1013,7 +1013,7 @@ function showPendingAlert(count) {
       </div>
       <button onclick="
         document.getElementById('pendingAlertOverlay').remove();
-        document.querySelector('.tab-btn[data-tab=\\'requests\\']')?.click();
+        document.querySelector('[data-tab=\'tab-requests\']')?.click();
       " style="
         background:var(--gold-500); color:#000;
         border:none; border-radius:8px;
