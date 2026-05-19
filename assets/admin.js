@@ -1165,7 +1165,7 @@ function renderRequests() {
           </div>
           <div style="color:var(--text-secondary);font-size:14px;margin-bottom:10px">${escapeHtml(r.message||'—')}</div>
           ${extra.note ? `<div style="font-size:13px;background:rgba(245,158,11,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:var(--text-primary)">📝 ${escapeHtml(extra.note)}</div>` : ''}
-          ${extra.requestTime && String(r.type||'').includes('outside') ? `<div style="font-size:13px;background:rgba(59,130,246,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:#3b82f6">🕐 ${extra.action === 'checkout' ? 'time OUT' : 'time IN '}: <strong>${extra.requestTime}</strong> — ${r.date||''}</div>` : ''}
+          ${extra.requestTime && String(r.type||'').includes('outside') ? `<div style="font-size:13px;background:rgba(59,130,246,0.08);padding:8px 12px;border-radius:6px;margin-bottom:10px;color:#3b82f6">🕐 ${extra.action === 'checkout' ? 'timeOUT' : 'timeIN '}: <strong>${extra.requestTime}</strong> — ${r.date||''}</div>` : ''}
           ${isPending && rid && String(r.type||'').startsWith('leave') ? (() => {
             const isHourly = (extra.leaveType || '') === 'hourly';
             const defDays  = extra.days  !== undefined ? extra.days  : '';
