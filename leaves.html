@@ -334,7 +334,7 @@ async function submitLeave() {
     if (!from || !to) { Toast.warning('تێبینی', 'تکایە بەروارەکان پڕبکەرەوە'); return; }
     if (new Date(to) < new Date(from)) { Toast.warning('تێبینی', 'بەرواری کۆتایی نابێت پێش دەستپێکردن بێت'); return; }
     const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
-    msgText   = `مۆڵەتی ساڵانە | ${from} → ${to} (${days} ڕۆژ)${reason ? ' | ' + reason : ''}`;
+    msgText   = `مۆڵەتی ساڵانە | ${from} ← ${to} (${days} ڕۆژ)${reason ? ' | ' + reason : ''}`;
     extraData = { from, to, days, leaveType: 'annual', reason };
 
   } else if (type === 'hourly') {
@@ -347,7 +347,7 @@ async function submitLeave() {
     const [h2,m2] = tTo.split(':').map(Number);
     const hrs = ((h2*60+m2) - (h1*60+m1)) / 60;
     const today = new Date().toISOString().split('T')[0];
-    msgText   = `مۆڵەتی کاتژمێری | ${tFrom} → ${tTo} (${hrs.toFixed(1)} کاتژمێر)${reason ? ' | ' + reason : ''}`;
+    msgText   = `مۆڵەتی کاتژمێری | ${tFrom} ← ${tTo} (${hrs.toFixed(1)} کاتژمێر)${reason ? ' | ' + reason : ''}`;
     extraData = { timeFrom: tFrom, timeTo: tTo, hours: hrs, leaveType: 'hourly', date: today, reason };
 
   } else {
