@@ -5,6 +5,28 @@
  */
 
 /* ══════════════════════════════════════════════
+   ▌ REPS API  (separate GAS deployment)
+   ══════════════════════════════════════════════ */
+const REPS_CONFIG = {
+  // ← paste your new Web App URL here after deploying reps-attendance-gas.js
+  API_URL: 'https://script.google.com/macros/s/AKfycbzpuXLbe3UBy0cp2k-vEg--Yk82_mljgpzCAoot6U7TlC6wLi9poux2KHtHeT27jcma/exec'
+};
+
+const RepsAPI = {
+  async _req(action, params = {}) {
+    const url = new URL(REPS_CONFIG.API_URL);
+    url.searchParams.set('action', action);
+    if (Object.keys(params).length) url.searchParams.set('payload', JSON.stringify(params));
+    const res = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { throw new Error('Invalid server response'); }
+  },
+  getTodayAttendance()       { return this._req('getTodayRepsAttendance'); },
+  getMonthlyAttendance(y, m) { return this._req('getMonthlyRepsAttendance', { year: y, month: m }); }
+};
+
+/* ══════════════════════════════════════════════
    ▌ STATE
    ══════════════════════════════════════════════ */
 const AdminState = {
@@ -13,7 +35,10 @@ const AdminState = {
   announcements: [],
   salary:        [],
   editTarget:    null,
-  currentDetailEmp: null  // employee being viewed in detail tab
+  currentDetailEmp: null,  // employee being viewed in detail tab
+  repsNames:     [],        // official rep name list (from KM col M)
+  repsToday:     [],        // today's reps check-ins (StartTimes)
+  repsMonthly:   []         // current-month reps records (KM)
 };
 
 /* ══════════════════════════════════════════════
@@ -197,6 +222,9 @@ async function loadOverview() {
     console.error('loadOverview:', e);
     Toast.error('Failed to load overview', e.message);
   }
+
+  // Load reps data independently — different API, don't block main render
+  loadRepsOverview();
 }
 
 function renderTodayAttendance() {
@@ -558,6 +586,11 @@ async function deleteEmployee(id) {
    ══════════════════════════════════════════════ */
 async function loadAttendance() {
   setEl('attTableBody', `<tr><td colspan="5" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading attendance...</td></tr>`);
+  // hide reps section while loading
+  setEl('repsAttBody', '');
+  const repsSep = document.getElementById('attRepsSep');
+  if (repsSep) repsSep.style.display = 'none';
+
   try {
     const res = await API.getAttendance();
     if (res.success) {
@@ -568,6 +601,9 @@ async function loadAttendance() {
     setEl('attTableBody', `<tr><td colspan="5" class="loading-rows text-red">Failed to load</td></tr>`);
     Toast.error('Load Failed', e.message);
   }
+
+  // Load reps independently (separate API)
+  loadRepsAttendanceTab();
 }
 
 function renderAttendanceTable(data) {
@@ -639,6 +675,8 @@ function getAttFiltered() {
 
 function filterAttendance() {
   renderAttendanceTable(getAttFiltered());
+  // also re-apply filters to reps rows
+  if (AdminState.repsMonthly.length) renderRepsAttendanceTable(AdminState.repsMonthly);
 }
 
 function exportAttendanceExcel() {
@@ -1499,4 +1537,227 @@ async function saveManualLeave() {
 function setEl(id, html) {
   const el = document.getElementById(id);
   if (el) el.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════
+   ▌ SALES REPS — Shared helpers
+   ══════════════════════════════════════════════ */
+
+/** name.toLowerCase() → [records] */
+function _repsByName(records) {
+  const map = {};
+  records.forEach(r => {
+    const k = r.name.toLowerCase();
+    if (!map[k]) map[k] = [];
+    map[k].push(r);
+  });
+  return map;
+}
+
+/** Merge official list + anyone with records not already in the list */
+function _allRepNames(officialList, records) {
+  const all = [...officialList];
+  records.forEach(r => {
+    if (!all.some(n => n.toLowerCase() === r.name.toLowerCase())) all.push(r.name);
+  });
+  return all;
+}
+
+/* ══════════════════════════════════════════════
+   ▌ OVERVIEW TAB — Today + Monthly
+   ══════════════════════════════════════════════ */
+async function loadRepsOverview() {
+  const monthEl = document.getElementById('reportMonth');
+  let year, month;
+  if (monthEl?.value) {
+    [year, month] = monthEl.value.split('-').map(Number);
+  } else {
+    const n = new Date();
+    year = n.getFullYear(); month = n.getMonth() + 1;
+  }
+
+  try {
+    const [todayRes, monthRes] = await Promise.all([
+      RepsAPI.getTodayAttendance(),
+      RepsAPI.getMonthlyAttendance(year, month)
+    ]);
+
+    if (todayRes.success) {
+      AdminState.repsToday = todayRes.data || [];
+      AdminState.repsNames = todayRes.reps  || [];
+    }
+    if (monthRes.success) {
+      AdminState.repsMonthly = monthRes.data || [];
+      if (!AdminState.repsNames.length) AdminState.repsNames = monthRes.reps || [];
+    }
+
+    _renderRepsTodayOverview();
+    _renderRepsMonthlyOverview();
+  } catch(e) {
+    console.warn('loadRepsOverview failed:', e.message);
+    // silently fail — reps section stays hidden
+  }
+}
+
+function _renderRepsTodayOverview() {
+  const sep   = document.getElementById('todayRepsSep');
+  const tbody = document.getElementById('todayRepsBody');
+  if (!sep || !tbody) return;
+
+  const reps    = AdminState.repsNames;
+  const records = AdminState.repsToday;
+  if (!reps.length && !records.length) return;
+
+  // build presence map
+  const presentMap = {};
+  records.forEach(r => { presentMap[r.name.toLowerCase()] = r; });
+
+  const allNames = _allRepNames(reps, records);
+  let present = 0, absent = 0;
+
+  const rows = allNames.map(name => {
+    const rec    = presentMap[name.toLowerCase()];
+    const isIn   = !!rec;
+    if (isIn) present++; else absent++;
+
+    const inMins = isIn ? timeToMins(rec.checkIn) : null;
+    const isLate = inMins !== null && inMins > (10 * 60 + 15);
+
+    const checkInBadge = isIn
+      ? `<span class="badge" style="background:${isLate?'rgba(244,63,94,0.15)':'rgba(34,197,94,0.15)'};color:${isLate?'#f43f5e':'#22c55e'};font-weight:${isLate?700:400}">${escapeHtml(rec.checkIn)}${isLate?' ⚠️':''}</span>`
+      : '<span class="badge badge-muted">—</span>';
+
+    const status = isIn
+      ? '<span class="badge badge-green">Complete</span>'
+      : '<span class="badge badge-muted">Absent</span>';
+
+    return `<tr style="${isLate?'background:rgba(244,63,94,0.04)':''}">
+      <td><strong>${escapeHtml(name)}</strong><br><span class="text-muted" style="font-size:12px">Sales Rep</span></td>
+      <td><span class="badge badge-gold">🚗 Sales</span></td>
+      <td>${checkInBadge}</td>
+      <td><span class="badge badge-muted">—</span></td>
+      <td>—</td>
+      <td>${status}</td>
+    </tr>`;
+  });
+
+  document.getElementById('repsTodayPresentBadge').textContent = present + ' Present';
+  document.getElementById('repsTodayAbsentBadge').textContent  = absent  + ' Absent';
+  sep.style.display = '';
+  tbody.innerHTML   = rows.join('') || '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:12px">No reps data</td></tr>';
+}
+
+function _renderRepsMonthlyOverview() {
+  const sep   = document.getElementById('monthlyRepsSep');
+  const tbody = document.getElementById('monthlyRepsBody');
+  if (!sep || !tbody) return;
+
+  const reps    = AdminState.repsNames;
+  const records = AdminState.repsMonthly;
+  if (!reps.length && !records.length) return;
+
+  sep.style.display = '';
+  const byRep    = _repsByName(records);
+  const allNames = _allRepNames(reps, records);
+
+  const rows = allNames.map(name => {
+    const recs        = byRep[name.toLowerCase()] || [];
+    const daysPresent = recs.length;
+
+    const inArr  = recs.map(r => timeToMins(r.checkIn)).filter(v => v !== null);
+    const outArr = recs.map(r => timeToMins(r.checkOut)).filter(v => v !== null);
+    const avgIn  = inArr.length  ? Math.round(inArr.reduce((a,b)=>a+b,0)  / inArr.length)  : null;
+    const avgOut = outArr.length ? Math.round(outArr.reduce((a,b)=>a+b,0) / outArr.length) : null;
+
+    const durs = recs
+      .filter(r => r.checkIn && r.checkOut)
+      .map(r => { const a=timeToMins(r.checkIn),b=timeToMins(r.checkOut); return (a!==null&&b!==null&&b>a)?b-a:null; })
+      .filter(v => v !== null);
+    const avgDur   = durs.length ? Math.round(durs.reduce((a,b)=>a+b,0) / durs.length) : null;
+    const totalMin = durs.reduce((a,b)=>a+b, 0);
+    const fmt      = m => m !== null ? `${Math.floor(m/60)}h ${m%60}m` : '—';
+
+    return `<tr>
+      <td><strong>${escapeHtml(name)}</strong><br><span class="text-muted" style="font-size:12px">Sales Rep</span></td>
+      <td><span class="badge badge-gold">🚗 Sales</span></td>
+      <td><span class="badge ${daysPresent>0?'badge-green':'badge-muted'}">${daysPresent} days</span></td>
+      <td>${avgIn  !== null ? minsToTime(avgIn)  : '—'}</td>
+      <td>${avgOut !== null ? minsToTime(avgOut) : '—'}</td>
+      <td>${avgDur !== null
+        ? `<span class="badge badge-green" style="font-weight:700">${fmt(avgDur)}</span><br><span class="text-muted" style="font-size:11px">Total: ${fmt(totalMin)}</span>`
+        : '<span class="badge badge-muted">—</span>'}</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = rows.join('') || '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:12px">No reps data</td></tr>';
+}
+
+/* ══════════════════════════════════════════════
+   ▌ ATTENDANCE TAB — Reps records (same style as staff)
+   ══════════════════════════════════════════════ */
+async function loadRepsAttendanceTab() {
+  const sep = document.getElementById('attRepsSep');
+  setEl('repsAttBody', `<tr><td colspan="5" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading reps...</td></tr>`);
+  if (sep) sep.style.display = '';
+
+  try {
+    const monthEl = document.getElementById('attMonthFilter');
+    let year, month;
+    if (monthEl?.value) {
+      [year, month] = monthEl.value.split('-').map(Number);
+    } else {
+      const n = new Date();
+      year = n.getFullYear(); month = n.getMonth() + 1;
+    }
+
+    const res = await RepsAPI.getMonthlyAttendance(year, month);
+    if (!res.success) throw new Error(res.message);
+
+    AdminState.repsMonthly = res.data || [];
+    if (res.reps?.length && !AdminState.repsNames.length) AdminState.repsNames = res.reps;
+
+    renderRepsAttendanceTable(AdminState.repsMonthly);
+  } catch(e) {
+    if (sep) sep.style.display = 'none';
+    setEl('repsAttBody', `<tr><td colspan="5" class="loading-rows text-red">❌ ${escapeHtml(e.message)}</td></tr>`);
+    console.warn('loadRepsAttendanceTab:', e.message);
+  }
+}
+
+function renderRepsAttendanceTable(data) {
+  const sep = document.getElementById('attRepsSep');
+
+  // Apply same filters as staff table
+  const empQ   = (document.getElementById('attEmpFilter')?.value  || '').toLowerCase().trim();
+  const monthQ =  document.getElementById('attMonthFilter')?.value || '';
+  const dayQ   =  document.getElementById('attDayFilter')?.value   || '';
+
+  const filtered = [...data]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .filter(r => {
+      if (empQ   && !r.name.toLowerCase().includes(empQ))     return false;
+      if (monthQ && !r.date.startsWith(monthQ))               return false;
+      if (dayQ   && !r.date.endsWith('-' + dayQ))             return false;
+      return true;
+    });
+
+  if (!filtered.length) {
+    if (sep) sep.style.display = 'none';
+    setEl('repsAttBody', '');
+    return;
+  }
+
+  if (sep) sep.style.display = '';
+  setEl('repsAttBody', filtered.map(r => {
+    const hasOut = r.checkOut && r.checkOut !== '—' && r.checkOut !== '';
+    return `<tr>
+      <td class="bold" style="color:var(--gold-500)">🚗</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${formatDate(r.date)}</td>
+      <td><span class="badge badge-green">${escapeHtml(r.checkIn  || '—')}</span></td>
+      <td>${hasOut ? `<span class="badge badge-blue">${escapeHtml(r.checkOut)}</span>` : '<span class="badge badge-muted">—</span>'}</td>
+    </tr>`;
+  }).join(''));
 }
