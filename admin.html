@@ -107,9 +107,25 @@
                 <th>Status</th>
               </tr>
             </thead>
+            <!-- ── Staff rows ── -->
             <tbody id="todayAttBody">
               <tr><td colspan="6" class="loading-rows"><div class="spinner spinner-sm" style="display:inline-block;vertical-align:middle;margin-right:8px"></div>Loading...</td></tr>
             </tbody>
+            <!-- ── Sales Reps separator (shown after data loads) ── -->
+            <tbody id="todayRepsSep" style="display:none">
+              <tr>
+                <td colspan="6" style="padding:0;border:none">
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 16px 6px;border-top:2px dashed var(--border-color);background:rgba(245,158,11,0.04)">
+                    <span style="font-size:15px">🚗</span>
+                    <strong style="color:var(--text-primary);font-size:13px">Sales Representatives</strong>
+                    <span class="badge badge-green"  id="repsTodayPresentBadge" style="font-size:11px">—</span>
+                    <span class="badge badge-muted"  id="repsTodayAbsentBadge"  style="font-size:11px">—</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            <!-- ── Sales Reps rows ── -->
+            <tbody id="todayRepsBody"></tbody>
           </table>
         </div>
       </div>
@@ -137,9 +153,23 @@
                 <th>Details</th>
               </tr>
             </thead>
+            <!-- ── Staff rows ── -->
             <tbody id="monthlyReportBody">
               <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
             </tbody>
+            <!-- ── Sales Reps separator ── -->
+            <tbody id="monthlyRepsSep" style="display:none">
+              <tr>
+                <td colspan="8" style="padding:0;border:none">
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 16px 6px;border-top:2px dashed var(--border-color);background:rgba(245,158,11,0.04)">
+                    <span style="font-size:15px">🚗</span>
+                    <strong style="color:var(--text-primary);font-size:13px">Sales Representatives</strong>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            <!-- ── Sales Reps rows ── -->
+            <tbody id="monthlyRepsBody"></tbody>
           </table>
         </div>
       </div>
@@ -293,9 +323,23 @@
               <th>Check-Out</th>
             </tr>
           </thead>
+          <!-- ── Staff rows ── -->
           <tbody id="attTableBody">
-            <tr><td colspan="8" class="loading-rows">Loading...</td></tr>
+            <tr><td colspan="5" class="loading-rows">Loading...</td></tr>
           </tbody>
+          <!-- ── Sales Reps separator ── -->
+          <tbody id="attRepsSep" style="display:none">
+            <tr>
+              <td colspan="5" style="padding:0;border:none">
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 16px 6px;border-top:2px dashed var(--border-color);background:rgba(245,158,11,0.04)">
+                  <span style="font-size:15px">🚗</span>
+                  <strong style="color:var(--text-primary);font-size:13px">Sales Representatives</strong>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <!-- ── Sales Reps rows ── -->
+          <tbody id="repsAttBody"></tbody>
         </table>
       </div>
     </div>
