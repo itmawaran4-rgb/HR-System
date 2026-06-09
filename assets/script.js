@@ -230,11 +230,33 @@ function markActiveNav() {
     if (href && href === current) item.classList.add('active');
   });
 }
+function injectServiceNavItem() {
+  const nav = document.querySelector('.sidebar-nav');
+  if (!nav) return;
+
+  // تحقق إذا كان الرابط موجود مسبقاً
+  if (nav.querySelector('[href="service-request.html"]')) return;
+
+  // أضف الرابط بعد رابط المغادرات (leaves.html)
+  const leavesLink = nav.querySelector('[href="leaves.html"]');
+  const newLink = document.createElement('a');
+  newLink.className = 'nav-item';
+  newLink.href = 'service-request.html';
+  newLink.innerHTML = '<span class="nav-icon">☕</span> داواکاری خزمەت';
+
+  if (leavesLink) {
+    leavesLink.insertAdjacentElement('afterend', newLink);
+  } else {
+    nav.appendChild(newLink);
+  }
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
   initSidebar();
   updateTopbarDate();
   markActiveNav();
   populateSidebarUser();
+  injectServiceNavItem();
   document.querySelectorAll('[data-logout]').forEach(btn => btn.addEventListener('click', logout));
 });
