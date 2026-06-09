@@ -200,6 +200,37 @@
   </style>
 </head>
 <body>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
+         onerror="this.style.display='none';document.getElementById('sbLogoFallback').style.display='flex'">
+    <div id="sbLogoFallback" style="display:none;align-items:center;gap:8px">
+      <div class="sidebar-logo-icon">🏢</div>
+      <div class="sidebar-logo-text">
+        <div class="brand-name">HR MAWARAN</div>
+        <div class="brand-sub">پۆرتاڵی کارمەند</div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-user">
+    <div class="sidebar-user-name" id="sidebarUserName">چاوەڕێبکە...</div>
+    <div class="sidebar-user-role" id="sidebarUserRole">کارمەند</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">مینیوی سەرەکی</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span> پرۆفایلەکەم</a>
+    <a class="nav-item active" href="attendance.html"><span class="nav-icon">🕐</span> ئامادەبوون</a>
+    <a class="nav-item" href="service-request.html"><span class="nav-icon">☕</span> داواکاری خزمەت</a>
+    <a class="nav-item" href="announcements.html"><span class="nav-icon">📢</span> ڕاگەیاندنەکان</a>
+    <a class="nav-item" href="salary.html"><span class="nav-icon">💰</span> مووچەکەم</a>
+    <a class="nav-item" href="leaves.html"><span class="nav-icon">🌴</span> مۆڵەتەکانم</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-ghost btn-block" data-logout>🚪 چوونەدەرەوە</button>
+  </div>
+</aside>
+
 
   <p class="logo">MAWARAN CO &nbsp;·&nbsp; طلب خدمة</p>
 
