@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>طلب خدمة | MAWARAN CO</title>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f0f2f5;
+      --card:      #ffffff;
+      --border:    #e4e7ec;
+      --text:      #1a1d23;
+      --muted:     #6b7280;
+      --coffee:    #6f4e37;
+      --tea:       #3a7d44;
+      --water:     #1d6fa4;
+      --other:     #c2760a;
+      --sent:      #16a34a;
+      --radius:    16px;
+      --shadow:    0 2px 12px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Noto Naskh Arabic', serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      color: var(--text);
+    }
+
+    /* ── Header ── */
+    .logo {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 400px;
+      padding: 28px 24px 24px;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    /* ── Name input ── */
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .field input:focus { border-color: var(--coffee); }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Buttons ── */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 18px 12px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      transition: transform .12s, opacity .12s, box-shadow .12s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:active { transform: scale(.96); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .btn .emoji { font-size: 30px; line-height: 1; }
+
+    .btn-coffee { background: var(--coffee); }
+    .btn-tea    { background: var(--tea);    }
+    .btn-water  { background: var(--water);  }
+    .btn-other  { background: var(--other);  }
+
+    /* ripple */
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,.18);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .btn:hover::after { opacity: 1; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--sent);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,.18);
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .toast.error { background: #dc2626; }
+
+    /* ── Spinner inside button ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    .loading .spinner { display: block; }
+    .loading .emoji, .loading .label { display: none; }
+  </style>
+</head>
+<body>
+
+  <p class="logo">MAWARAN CO &nbsp;·&nbsp; طلب خدمة</p>
+
+  <div class="card">
+    <p class="card-title">مرحباً 👋</p>
+    <p class="card-sub">اكتب اسمك ثم اختر ما تريد</p>
+
+    <div class="field">
+      <label for="empName">اسمك</label>
+      <input id="empName" type="text" placeholder="مثال: أحمد علي" autocomplete="off" />
+    </div>
+
+    <div class="divider">اختر طلبك</div>
+
+    <div class="btn-grid">
+      <button class="btn btn-coffee" onclick="sendRequest('Coffee', this)">
+        <span class="emoji">☕</span>
+        <span class="label">قهوة</span>
+        <span class="spinner"></span>
+      </button>
+
+      <button class="btn btn-tea" onclick="sendRequest('Tea', this)">
+        <span class="emoji">🍵</span>
+        <span class="label">چاي</span>
+        <span class="spinner"></span>
+      </button>
+
+      <button class="btn btn-water" onclick="sendRequest('Water', this)">
+        <span class="emoji">💧</span>
+        <span class="label">ماء</span>
+        <span class="spinner"></span>
+      </button>
+
+      <button class="btn btn-other" onclick="sendRequest('Other', this)">
+        <span class="emoji">📝</span>
+        <span class="label">طلب آخر</span>
+        <span class="spinner"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ══════════════════════════════════════════
+    //  Firebase config — نفس مشروعك
+    // ══════════════════════════════════════════
+    const firebaseConfig = {
+      apiKey:            "AIzaSyC_zyJginS-_nUfFAXsAWNbYxMteOi1m3E",
+      authDomain:        "company-service-6faaf.firebaseapp.com",
+      projectId:         "company-service-6faaf",
+      storageBucket:     "company-service-6faaf.firebasestorage.app",
+      messagingSenderId: "726705809159",
+      appId:             "1:726705809159:web:becb04cc61222b513c87a2",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ══════════════════════════════════════════
+    //  حفظ الاسم في localStorage
+    // ══════════════════════════════════════════
+    const nameInput = document.getElementById('empName');
+
+    const saved = localStorage.getItem('emp_name');
+    if (saved) nameInput.value = saved;
+
+    nameInput.addEventListener('input', () => {
+      localStorage.setItem('emp_name', nameInput.value.trim());
+    });
+
+    // ══════════════════════════════════════════
+    //  إرسال الطلب
+    // ══════════════════════════════════════════
+    let sending = false;
+
+    async function sendRequest(type, btn) {
+      const name = nameInput.value.trim();
+
+      if (!name) {
+        showToast('⚠️ اكتب اسمك أولاً', true);
+        nameInput.focus();
+        return;
+      }
+
+      if (sending) return;
+      sending = true;
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        // ١. أضف الطلب في Firestore
+        await db.collection('requests').add({
+          employee:  name,
+          type:      type,
+          status:    'pending',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // ٢. أرسل FCM لموظفي الخدمة
+        await notifyServiceStaff(name, type);
+
+        showToast('✅ تم إرسال طلبك!');
+      } catch (err) {
+        console.error(err);
+        showToast('❌ فشل الإرسال، حاول مرة أخرى', true);
+      } finally {
+        sending = false;
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    }
+
+    // ══════════════════════════════════════════
+    //  FCM عبر Cloud Function أو مباشرة
+    //  (نفس منطق Flutter — يقرأ tokens من Firestore)
+    //  ملاحظة: access token يُولَّد من الخادم أو تضع هنا
+    //  endpoint خاص بك إذا عندك proxy.
+    //  الحل البسيط: استدعاء GAS (Google Apps Script) كـ proxy
+    // ══════════════════════════════════════════
+    async function notifyServiceStaff(employee, type) {
+      // جلب كل tokens الخدمة
+      const snap = await db.collection('fcm_tokens')
+                            .where('role', '==', 'service')
+                            .get();
+
+      if (snap.empty) return;
+
+      // أرسل لكل token عبر GAS proxy
+      // ضع هنا رابط GAS الخاص بك (اقرأ التعليمات أدناه)
+      const GAS_URL = 'https://script.google.com/macros/s/AKfycbx4rzBnuYsYrzXRgfFYeGnkWoQUQWmFjH-IYIdEjxdHcpxyQncSf9-JgoY37QUdogpnUg/exec';
+
+      const tokens = snap.docs.map(d => d.data().token);
+
+      await fetch(GAS_URL, {
+        method: 'POST',
+        mode:   'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          tokens,
+          title: 'طلب جديد 🔔',
+          body:  `${employee} طلب: ${type}`,
+        }),
+      });
+    }
+
+    // ══════════════════════════════════════════
+    //  Toast
+    // ══════════════════════════════════════════
+    let toastTimer;
+    function showToast(msg, isError = false) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast' + (isError ? ' error' : '') + ' show';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>
