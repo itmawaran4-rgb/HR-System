@@ -314,20 +314,13 @@
 
   let currentQty = 1; // قيمة افتراضية للكمية
 
- // ── Init page ──
+// ── Init page ──
   document.addEventListener('DOMContentLoaded', () => {
     const user = requireAuth(false);
     if (!user) return;
     startClock && startClock('topbarClock', 'topbarDate');
-
-    // Pre-fill name from session or localStorage
-    const nameInput = document.getElementById('empName');
-    const savedName = user.name || localStorage.getItem('emp_name') || '';
-    if (savedName) nameInput.value = savedName;
-
-    nameInput.addEventListener('input', () => {
-      localStorage.setItem('emp_name', nameInput.value.trim());
-    });
+    
+    // تم إزالة جلب وحفظ الاسم تلقائياً ليبقى الحقل فارغاً في البداية
   });
 
   // التحكم بالكمية الزيادة والنقصان
