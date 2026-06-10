@@ -9,7 +9,6 @@
   <meta name="theme-color" content="#f59e0b">
   <link rel="apple-touch-icon" href="assets/icon.png">
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -61,8 +60,8 @@
       margin-bottom: 24px;
     }
 
-    /* ── Name Field ── */
-    .svc-field { margin-bottom: 0; }
+    /* ── Fields ── */
+    .svc-field { margin-bottom: 16px; }
     .svc-field label {
       display: block;
       font-size: 13px;
@@ -85,6 +84,43 @@
       text-align: right;
     }
     .svc-field input:focus { border-color: var(--gold-500); }
+
+    /* ── Quantity Stepper ── */
+    .qty-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 6px 12px;
+    }
+    .qty-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+      user-select: none;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .qty-btn:active { transform: scale(0.92); background: rgba(0,0,0,0.05); }
+    .qty-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      min-width: 40px;
+      text-align: center;
+      font-family: monospace, sans-serif;
+    }
 
     /* ── Divider ── */
     .svc-divider {
@@ -162,10 +198,8 @@
 </head>
 <body>
 
-<!-- Sidebar Overlay -->
 <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-<!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <img src="assets/logo.png" alt="HR MAWARAN" class="company-logo-img"
@@ -196,10 +230,8 @@
   </div>
 </aside>
 
-<!-- Main Content -->
 <div class="main-content">
 
-  <!-- Topbar -->
   <header class="topbar">
     <button onclick="location.reload()"
       style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--gold-500);border-radius:10px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap"
@@ -210,21 +242,28 @@
     <button class="topbar-hamburger" id="hamburger">☰</button>
   </header>
 
-  <!-- Page Content -->
   <main class="page-content">
     <div class="page-header">
       <h1 class="page-title">داواکاری خزمەت</h1>
       <p class="page-subtitle">داواکاریەکەت بنێرە بۆ تیمی خزمەت</p>
     </div>
 
-    <!-- Service Card -->
     <div class="service-card">
       <p class="service-card-title">بەخێربێیت 👋</p>
-      <p class="service-card-sub">ناوت بنووسە، پاشان داواکارییەکەت هەڵبژێرە</p>
+      <p class="service-card-sub">زانیارییەکان پڕبکەرەوە و داواکارییەکەت بنێرە</p>
 
       <div class="svc-field">
         <label for="empName">ناوت</label>
         <input id="empName" type="text" placeholder="نموونە: ئەحمەد عەلی" autocomplete="off" />
+      </div>
+
+      <div class="svc-field">
+        <label>دانە (الكمية)</label>
+        <div class="qty-stepper">
+          <button type="button" class="qty-btn" onclick="changeQty(-1)">-</button>
+          <span class="qty-text" id="qtyDisplay">1</span>
+          <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
       </div>
 
       <div class="svc-divider">داواکارییەکەت هەڵبژێرە</div>
@@ -258,7 +297,6 @@
   </main>
 </div>
 
-<!-- Shared script (handles sidebar, auth, toast, etc.) -->
 <script src="assets/script.js?v=4"></script>
 
 <script>
@@ -273,6 +311,8 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+
+  let currentQty = 1; // قيمة افتراضية للكمية
 
   // ── Init page ──
   document.addEventListener('DOMContentLoaded', () => {
@@ -289,6 +329,14 @@
       localStorage.setItem('emp_name', nameInput.value.trim());
     });
   });
+
+  // التحكم بالكمية الزيادة والنقصان
+  function changeQty(amount) {
+    currentQty += amount;
+    if (currentQty < 1) currentQty = 1; // عدم السماح بأقل من 1
+    if (currentQty > 10) currentQty = 10; // حد أقصى اختياري (10 قطع)
+    document.getElementById('qtyDisplay').textContent = currentQty;
+  }
 
   // ── Send Request ──
   let sending = false;
@@ -309,11 +357,16 @@
       await db.collection('requests').add({
         employee:  name,
         type:      type,
+        quantity:  currentQty, // إرسال الكمية المختارة إلى فايربيس
         status:    'pending',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
-      await notifyServiceStaff(name, type);
-      Toast.success('داواکاری نێردرا ✅', `${name} — ${typeLabel(type)}`);
+      await notifyServiceStaff(name, type, currentQty);
+      Toast.success('داواکاری نێردرا ✅', `${name} — ${typeLabel(type)} (×${currentQty})`);
+      
+      // إعادة تعيين العداد إلى 1 بعد نجاح الإرسال
+      currentQty = 1;
+      document.getElementById('qtyDisplay').textContent = 1;
     } catch (err) {
       console.error(err);
       Toast.error('هەڵە', 'نێردن سەرکەوتوو نەبوو، دووبارە هەوڵبدەرەوە');
@@ -329,7 +382,7 @@
   }
 
   // ── FCM Notify via GAS Proxy ──
-  async function notifyServiceStaff(employee, type) {
+  async function notifyServiceStaff(employee, type, quantity) {
     const snap = await db.collection('fcm_tokens')
                           .where('role', '==', 'service')
                           .get();
@@ -340,7 +393,11 @@
       method: 'POST',
       mode:   'no-cors',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ tokens, title: 'داواکاری نوێ 🔔', body: `${employee}: ${typeLabel(type)}` }),
+      body: JSON.stringify({ 
+        tokens, 
+        title: 'داواکاری نوێ 🔔', 
+        body: `${employee}: ${typeLabel(type)} ×${quantity}` // إضافة إشارة الضرب والكمية في الإشعار للعمال
+      }),
     });
   }
 </script>
