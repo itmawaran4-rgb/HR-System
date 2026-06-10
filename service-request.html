@@ -319,8 +319,17 @@
     const user = requireAuth(false);
     if (!user) return;
     startClock && startClock('topbarClock', 'topbarDate');
+
+    const nameInput = document.getElementById('empName');
     
-    // تم إزالة جلب وحفظ الاسم تلقائياً ليبقى الحقل فارغاً في البداية
+    // نجلب فقط الاسم الذي كتبه المستخدم بيده سابقاً، ولا نسحب اسم الحساب تلقائياً
+    const savedName = localStorage.getItem('emp_name') || '';
+    if (savedName) nameInput.value = savedName;
+
+    // عند الكتابة، يتم الحفظ في ذاكرة المتصفح لحمايته من الاختفاء عند تحديث الصفحة
+    nameInput.addEventListener('input', () => {
+      localStorage.setItem('emp_name', nameInput.value.trim());
+    });
   });
 
   // التحكم بالكمية الزيادة والنقصان
